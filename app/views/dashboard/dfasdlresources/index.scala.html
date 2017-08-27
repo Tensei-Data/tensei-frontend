@@ -1,0 +1,71 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(entries: Seq[DFASDLResource])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/confirm.js")"></script>
+}
+
+@base(Messages("ui.dfasdlresource.title"), customScripts = myScripts) {
+  <div class="clearfix pageTitle">
+    <span class="glyphicon glyphicon-education" aria-hidden="true"></span>
+    <span>@Messages("ui.mainnavbar.dfasdlresources")</span>
+    <a href="@routes.DFASDLResourcesController.add()" class="btn btn-primary btn-sm pull-right">@Messages("ui.new.model", Messages("models.dfasdlresource"))</a>
+  </div>
+
+  @if(entries.nonEmpty) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 120px;"></th>
+          <th>@Messages("models.dfasdlresource.dfasdl.id")</th>
+          <th>@Messages("models.dfasdlresource.dfasdl.version")</th>
+        </tr>
+      </thead>
+      <tbody>
+      @for(entry <- entries) {
+        <tr>
+          <td>
+            @entry.id.fold(Html("")) { id =>
+              <a class="btn btn-xs" href="@routes.DFASDLResourcesController.edit(id)">@Messages("ui.edit")</a>
+              <a class="btn btn-xs" data-confirm="@Messages("ui.are_you_sure")" href="@routes.DFASDLResourcesController.destroy(id)">@Messages("ui.delete")</a>
+            }
+          </td>
+          <td>
+            @entry.id.fold(Html("")) { id =>
+              <a href="@routes.DFASDLResourcesController.show(id)">@entry.dfasdl.id</a>
+            }
+          </td>
+          <td>@entry.dfasdl.version</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  } else {
+    <div class="panel panel-info panel-empty">
+      <div class="panel-heading">
+        @Messages("ui.empty.model", Messages("models.dfasdlresource"))
+      </div>
+      <div class="panel-body">
+        <a href="@routes.DFASDLResourcesController.add()">@Messages("ui.empty.create")</a> @Messages("ui.empty.explain", Messages("models.dfasdlresource"))
+      </div>
+    </div>
+  }
+}

@@ -1,0 +1,124 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@import java.util.Locale
+@(form: Form[forms.ConnectionInformationResourceForm.Data], languageTags: Array[Locale], groups: Seq[Group], userNames: Seq[UserNameInfo], target: Call)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import helpers.authorisationFormElements
+
+@helper.form(target, 'role -> "form") {
+  @helper.CSRF.formField
+
+  @form.globalError.map { error =>
+    <p class="alert alert-danger">
+      <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+      <span class="sr-only">Error:</span>
+      @error.message
+    </p>
+  }
+
+  <div class="form-group">
+    <label for="uri">@Messages("models.connectionInformation.uri")</label>
+    <input autofocus type="text" id="uri" name="uri" class="form-control autocomplete" data-url="@routes.ConnectionInformationsController.autoComplete()" value="@form("uri").value.getOrElse("")">
+    <div class="help-text">
+      <p>@Messages("ui.connectionInformations.uri.info") <a target="_blank" href="http://www.w3.org/Addressing/URL/uri-spec.html">@Messages("models.connectionInformation.uri")</a></p>
+      <div style="cursor: pointer;" data-toggle="collapse" data-target="#uriExamples">
+        <strong><span class="glyphicon glyphicon-collapse-down"></span> @Messages("ui.connectionInformations.uri.examples")</strong>
+      </div>
+      <div id="uriExamples" class="collapse" style="padding: 10px 20px; border: 1px dashed #ccc">
+        <h4>@Messages("ui.connectionInformations.uri.examples.db")</h4>
+        <dl>
+          <dt>Derby</dt>
+          <dd><pre>jdbc:derby:///srv/tensei/data/derby-db</pre></dd>
+          <dt>H2</dt>
+          <dd><pre>jdbc:h2:///srv/tensei/data/h2-db</pre></dd>
+          <dt>HyperSQL</dt>
+          <dd><pre>jdbc:hsqldb:hsql://10.8.1.10/my-db</pre></dd>
+          <dt>MariaDB</dt>
+          <dd><pre>jdbc:mariadb://192.168.0.42/my-db</pre></dd>
+          <dt>Microsoft SQL Server</dt>
+          <dd><pre>jdbc:sqlserver://10.8.1.129;databaseName=my-db;applicationName=myApplication</pre></dd>
+          <dt>MySQL</dt>
+          <dd><pre>jdbc:mysql://192.168.1.10/my-db?generateSimpleParameterMetadata=true</pre></dd>
+          <dt>Oracle</dt>
+          <dd><pre>jdbc:oracle:thin:@@10.0.2.2:1521:my-db</pre></dd>
+          <dt>PostgreSQL</dt>
+          <dd><pre>jdbc:postgresql://10.8.0.95/my-db</pre></dd>
+          <dt>SQLite</dt>
+          <dd><pre>jdbc:sqlite:///srv/tensei/data/sqlite-db</pre></dd>
+        </dl>
+        <h4>@Messages("ui.connectionInformations.uri.examples.file")</h4>
+        <dl>
+          <dt></dt>
+          <dd><pre>file:///srv/tensei/data/input.csv</pre></dd>
+          <dt></dt>
+          <dd><pre>http://www.example.com/file.csv</pre></dd>
+          <dt></dt>
+          <dd><pre>ftp://ftp.example.com/folder/subfolder/your-file.csv</pre></dd>
+        </dl>
+      </div>
+    </div>
+    @form.errors("uri").map { error =>
+      <p class="alert-warning">@Messages(error.message, error.args: _*)</p>
+    }
+  </div>
+  <div class="form-group">
+    <label for="language_tag">@Messages("models.connectionInformation.language_tag")</label>
+    <select class="form-control" id="language_tag" name="language_tag">
+      <option value="und">@Messages("models.connectionInformation.language_tag.undefined")</option>
+    @for(tag <- languageTags) {
+      <option value="@tag.toLanguageTag" @if(form("language_tag").value.contains(tag.toLanguageTag)){selected="selected"}>@tag.getDisplayLanguage (@tag.toLanguageTag)</option>
+    }
+    </select>
+    <p class="help-text">
+      @Messages("models.connectionInformation.language_tag.info")
+    </p>
+    @form.errors("language_tag").map { error =>
+      <p class="alert alert-warning">@Messages(error.message, error.args: _*)</p>
+    }
+  </div>
+  <div class="form-group">
+    <label for="username">@Messages("models.connectionInformation.username")</label>
+    <input type="text" id="username" name="username" class="form-control" value="@form("username").value.getOrElse("")">
+    <div class="help-text">@Messages("ui.connectionInformations.username.info")</div>
+    @form.errors("username").map { error =>
+      <p class="alert-warning">@Messages(error.message, error.args: _*)</p>
+    }
+  </div>
+  <div class="form-group">
+    <label for="password">@Messages("models.connectionInformation.password")</label>
+    <input type="password" id="password" name="password" class="form-control" value="@form("password").value.getOrElse("")">
+    <div class="help-text">@Messages("ui.connectionInformations.password.info")</div>
+    @form.errors("password").map { error =>
+      <p class="alert-warning">@Messages(error.message, error.args: _*)</p>
+    }
+  </div>
+  <div class="form-group">
+    <label for="checksum">@Messages("models.connectionInformation.checksum")</label>
+    <input type="text" id="checksum" name="checksum" class="form-control" value="@form("checksum").value.getOrElse("")">
+    <div class="help-text">@Messages("ui.connectionInformations.checksum.info")</div>
+    @form.errors("checksum").map { error =>
+      <p class="alert-warning">@Messages(error.message, error.args: _*)</p>
+    }
+  </div>
+
+  @authorisationFormElements(form, userNames, groups)
+
+  <button type="submit" class="btn btn-primary">@Messages("ui.save")</button>
+  <a href="@routes.ConnectionInformationsController.index()" class="btn btn-default">@Messages("ui.cancel")</a>
+}
+

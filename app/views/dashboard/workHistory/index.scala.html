@@ -1,0 +1,199 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(entries: Seq[WorkHistoryEntry], numberOfPages: Int, currentPage: Int, stats: WorkHistoryStatistics)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myCss = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/tcqueue.css")">
+  <link href="@routes.WebJarAssets.at(webJarAssets.locate("nv.d3.min.css"))" rel="stylesheet"/>
+}
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("d3.min.js"))"></script>
+  <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("nv.d3.min.js"))"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/d3-charts.js")"></script>
+  <script>
+    @if(stats.startedBy.nonEmpty) {
+      var byTypeObjects = [];
+      @for(entry <- stats.startedBy) {
+        byTypeObjects[byTypeObjects.length] = {label : "@entry.label", value : "@entry.value"};
+      }
+      nvPieChart("pie", byTypeObjects, 300, 300);
+    }
+
+    @if(stats.exitStatus.nonEmpty) {
+      var byStatusObjects = [];
+      @for(entry <- stats.exitStatus) {
+        byStatusObjects[byStatusObjects.length] = {label : "@entry.label", value : "@entry.value"};
+      }
+      nvPieChart("status", byStatusObjects, 300, 300);
+    }
+
+    @if(stats.runningTime.nonEmpty) {
+      var byTimeObjects = [];
+      @for(entry <- stats.runningTime) {
+        byTimeObjects[byTimeObjects.length] = {label : "@entry.label", value : "@entry.value"};
+      }
+      nvPieChart("time", byTimeObjects, 300, 300);
+    }
+  </script>
+}
+
+@base(Messages("models.tcqueue"), customScripts = myScripts, customCss = myCss) {
+  <div class="clearfix pageTitle">
+    <span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span>
+    <span>@Messages("ui.dashboard.charts.tchistory")</span>
+  </div>
+
+  @if(entries.nonEmpty) {
+    <div id="charts" class="clearfix">
+      <div id="container-by-type" class="col-xs-12 col-sm-4 containerChart">
+        <h4>@Messages("models.tcqueuehistory.chart.startedBy")</h4>
+        <div id="pie">@Messages("ui.dashboard.charts.empty")</div>
+      </div>
+      <div id="container-status" class="col-xs-12 col-sm-4 containerChart">
+        <h4>@Messages("models.tcqueuehistory.chart.statusFinish")</h4>
+        <div id="status">@Messages("ui.dashboard.charts.empty")</div>
+      </div>
+      <div id="container-by-time" class="col-xs-12 col-sm-4 containerChart">
+        <h4>@Messages("models.tcqueuehistory.chart.duration")</h4>
+        <div id="time">@Messages("ui.dashboard.charts.empty")</div>
+      </div>
+    </div>
+
+    @if(numberOfPages > 0) {
+      <nav>
+        <ul class="pager">
+          @if(currentPage == 0) {
+            <li class="disabled"><a href="#">1</a></li>
+            <li class="disabled"><a href="#">&laquo;</a></li>
+          } else {
+            <li><a href="@routes.WorkHistoryController.index(0)">1</a></li>
+            <li><a href="@routes.WorkHistoryController.index(currentPage - 1)">&laquo;</a></li>
+          }
+          <li class="active"><a href="#">@{currentPage + 1}</a></li>
+          @if(currentPage + 1 == numberOfPages) {
+            <li class="disabled"><a href="#">&raquo;</a></li>
+            <li class="disabled"><a href="#">@{numberOfPages}</a></li>
+          } else {
+            <li><a href="@routes.WorkHistoryController.index(currentPage + 1)">&raquo;</a></li>
+            <li><a href="@routes.WorkHistoryController.index(numberOfPages - 1)">@{numberOfPages}</a></li>
+          }
+        </ul>
+      </nav>
+    }
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>@Messages("models.tcqueue.id")</th>
+          <th>@Messages("models.tcqueue.tkid")</th>
+          <th>@Messages("models.tcqueuehistory.chart.statusFinish")</th>
+          <th>@Messages("models.tcqueue.created")</th>
+          <th>@Messages("models.tcqueuehistory.started")</th>
+          <th>@Messages("models.tcqueuehistory.finished")</th>
+          <th>@Messages("models.tcqueue.cron")</th>
+          <th>@Messages("models.tcqueue.trigger")</th>
+          <th>@Messages("models.tcqueue.user")</th>
+        </tr>
+      </thead>
+      <tbody>
+      @for(entry <- entries) {
+        <tr>
+          <td>
+            <a href="@routes.AgentRunLogsController.show(entry.uuid)">@entry.uuid</a>
+          </td>
+          <td>
+            <a href="@routes.TransformationConfigurationsController.show(entry.tkid)">@entry.tkid</a>
+          </td>
+          <td>
+          @if(entry.failed) {
+            <div class="bg-danger text-center">@Messages("models.tcqueuehistory.error")</div>
+          }else{
+            @if(entry.aborted) {
+              <div class="bg-warning text-center">@Messages("models.tcqueuehistory.aborted")</div>
+            }else{
+              <div class="bg-success text-center">@Messages("models.tcqueuehistory.completed")</div>
+            }
+          }
+          </td>
+          <td>
+            @entry.created
+          </td>
+          <td>
+            @entry.started
+          </td>
+          <td>
+            @entry.finished
+          </td>
+          <td>
+          @if(entry.cron) {
+            <span class="glyphicon glyphicon-ok"></span>
+          } else {
+            <span class="glyphicon glyphicon-remove"></span>
+          }
+          </td>
+          <td>
+          @if(entry.trigger) {
+            <span class="glyphicon glyphicon-ok"></span>
+          } else {
+            <span class="glyphicon glyphicon-remove"></span>
+          }
+          </td>
+          <td>
+          @if(entry.user.isDefined) {
+            <span class="glyphicon glyphicon-ok"></span>
+          } else {
+            <span class="glyphicon glyphicon-remove"></span>
+          }
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+
+    @if(numberOfPages > 0) {
+      <nav>
+        <ul class="pager">
+          @if(currentPage == 0) {
+            <li class="disabled"><a href="#">1</a></li>
+            <li class="disabled"><a href="#">&laquo;</a></li>
+          } else {
+            <li><a href="@routes.WorkHistoryController.index(0)">1</a></li>
+            <li><a href="@routes.WorkHistoryController.index(currentPage - 1)">&laquo;</a></li>
+          }
+          <li class="active"><a href="#">@{currentPage + 1}</a></li>
+          @if(currentPage + 1 == numberOfPages) {
+            <li class="disabled"><a href="#">&raquo;</a></li>
+            <li class="disabled"><a href="#">@{numberOfPages}</a></li>
+          } else {
+            <li><a href="@routes.WorkHistoryController.index(currentPage + 1)">&raquo;</a></li>
+            <li><a href="@routes.WorkHistoryController.index(numberOfPages - 1)">@{numberOfPages}</a></li>
+          }
+        </ul>
+      </nav>
+    }
+  } else {
+    <div class="panel panel-info panel-empty">
+      <div class="panel-heading">
+      @Messages("ui.empty.model", Messages("models.tcqueuehistory"))
+      </div>
+    </div>
+  }
+}

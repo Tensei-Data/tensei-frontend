@@ -1,0 +1,73 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(cron: Cron)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/confirm.js")"></script>
+}
+
+@myCss = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/cron.css")">
+}
+
+@base(Messages("models.cron"), customScripts = myScripts, customCss = myCss) {
+  <h1>@Messages("models.cron")</h1>
+
+  <table class="table table-striped">
+    <tbody>
+      <tr>
+        <td class="parameter">@Messages("models.cron.id")</td>
+        <td>Cronjob @cron.id</td>
+      </tr>
+      <tr>
+        <td class="parameter">@Messages("models.transformationconfiguration")</td>
+        <td><a href="@routes.TransformationConfigurationsController.show(cron.tkid)">@cron.tkid</a></td>
+      </tr>
+      <tr>
+        <td class="parameter">@Messages("models.cron.format")</td>
+        <td>
+          <samp>@cron.format</samp>
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">@Messages("models.cron.description")</td>
+        <td>
+        <small>@cron.description.fold(Messages("ui.cron.description.empty"))(d => d)</small>
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">@Messages("models.cron.active")</td>
+        <td>
+        @if(cron.active) {
+          <span class="text-success">@Messages("ui.activated")</span>
+        } else {
+          <span class="text-danger">@Messages("ui.deactivated")</span>
+        }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  @cron.id.fold(Html("")) { id =>
+    <a class="btn btn-primary" href="@routes.CronController.edit(id)">@Messages("ui.edit")</a>
+    <a class="btn btn-danger" data-confirm="@Messages("ui.are_you_sure")" href="@routes.CronController.destroy(id)">@Messages("ui.delete")</a>
+  }
+  <a class="btn btn-default" href="@routes.CronController.index()">@Messages("ui.back")</a>
+}

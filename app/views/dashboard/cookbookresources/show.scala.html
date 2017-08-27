@@ -1,0 +1,105 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(resource: CookbookResource, dfasdls: Set[DFASDLResource])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/confirm.js")"></script>
+}
+
+@myCss = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/cookbook.css")">
+}
+
+@base(Messages("models.cookbook"), customScripts = myScripts, customCss = myCss) {
+  <h1>Cookbook</h1>
+  <table class="table table-striped">
+    <tbody>
+      <tr>
+        <td class="parameter">
+          @Messages("models.cookbook.id")
+        </td>
+        <td>
+          @resource.cookbook.id
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+          @Messages("models.cookbook.sources")
+        </td>
+        <td>
+          <ul>
+            @for(source <- resource.cookbook.sources) {
+              @defining(dfasdls.find(_.dfasdl.id == source.id)) { dfasdlO =>
+                <li>
+                  @dfasdlO.fold(Html("")) { dfasdl =>
+                    @dfasdl.id.fold {
+                      <span>@source.id (@source.version)</span>
+                    } { id =>
+                      <a href="@routes.DFASDLResourcesController.show(id)">@source.id (@source.version)</a>
+                    }
+                  }
+                </li>
+              }
+            }
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+          @Messages("models.cookbook.target")
+        </td>
+        <td>
+          @resource.cookbook.target.fold(Html("")) { target =>
+            @defining(dfasdls.find(_.dfasdl.id == target.id)) { dfasdlO =>
+              @dfasdlO.fold(Html("")) { dfasdl =>
+                @dfasdl.id.fold {
+                  <span>@target.id (@target.version)</span>
+                } { id =>
+                  <a href="@routes.DFASDLResourcesController.show(id)">@target.id (@target.version)</a>
+                }
+              }
+            }
+          }
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+          @Messages("models.cookbook.recipes")
+        </td>
+        <td>
+          @if(resource.cookbook.recipes.isEmpty) {
+            <p class="text-warning">@Messages("ui.cookbook.norecipes")</p>
+          } else {
+            <ul>
+            @for(recipe <- resource.cookbook.recipes) {
+              <li>@recipe.id</li>
+            }
+            </ul>
+          }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  @resource.id.fold(Html("")) { id =>
+    <a class="btn btn-primary" href="@routes.CookbookResourcesController.edit(id).withFragment(s"/$id/mappings/")">@Messages("ui.edit")</a>
+    <a class="btn btn-danger" data-confirm="@Messages("ui.are_you_sure.cookbook")" href="@routes.CookbookResourcesController.destroy(id)">@Messages("ui.delete")</a>
+  }
+  <a class="btn btn-default" href="@routes.CookbookResourcesController.index()">@Messages("ui.back")</a>
+}

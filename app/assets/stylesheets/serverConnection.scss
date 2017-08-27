@@ -1,0 +1,35 @@
+/*
+ * Tensei Frontend
+ *
+ * Copyright (C) 2014 - 2015 Wegtam UG
+ *
+ * Unauthorized copying of this file, via any medium is strictly prohibited!
+ * Proprietary and confidential
+ *
+ */
+
+html, body{height:100%; margin:0;padding:0}
+
+.container{
+  height:100%;
+  display:table;
+  width: 100%;
+  padding: 0;
+
+  .middler {
+    height: 100%;
+    display:table-cell;
+    vertical-align: middle;
+
+    .logoTensei {
+      background: url("../img/logo_300.png") no-repeat scroll center top transparent;
+      height: 160px;
+      margin-bottom: 30px;
+    }
+  }
+}
+
+.centering {
+  float:none;
+  margin:0 auto;
+}

@@ -1,0 +1,418 @@
+/*
+ * Tensei Frontend
+ *
+ * Copyright (C) 2014 - 2015 Wegtam UG
+ *
+ * Unauthorized copying of this file, via any medium is strictly prohibited!
+ * Proprietary and confidential
+ *
+ */
+
+$color-base03 :  #002b36;
+$color-base02 :  #073642;
+$color-base01 :  #586e75;
+$color-base00 :  #657b83;
+$color-base0 :  #839496;
+$color-base1 :  #93a1a1;
+$color-base2 :  #eee8d5;
+$color-base3 :  #fdf6e3;
+$color-solar-yellow :  #b58900;
+$color-solar-orange :  #cb4b16;
+$color-solar-red :  #dc322f;
+$color-solar-magenta :  #d33682;
+$color-solar-violet :  #6c71c4;
+$color-solar-blue :  #268bd2;
+$color-solar-cyan :  #2aa198;
+$color-solar-green :  #859900;
+
+#loadingImage {
+  background: url("../img/ajax-loader.gif") no-repeat scroll center center transparent;
+  height: 400px;
+}
+
+a {
+  cursor: pointer;
+}
+
+.node {
+  cursor: pointer;
+
+  circle {
+    fill: #fff;
+    stroke: $color-base1;
+    stroke-width: 1px;
+  }
+
+  .leaf {
+    fill: #fff;
+    stroke: $color-solar-blue;
+    stroke-width: 1.5px;
+  }
+
+  text {
+    font-size: 10px;
+    font-family: sans-serif;
+    fill: $color-base03;
+  }
+
+  .nodeTextSemantic {
+    font-weight: bold;
+  }
+}
+
+.nodeActive {
+  .leaf {
+    stroke: $color-solar-red;
+  }
+
+  text {
+    fill: $color-solar-red;
+    text-decoration: underline;
+  }
+}
+
+.overlay {
+  background-color: $color-base3;
+  border: 1px solid $color-base2;
+  color-profile: sRGB;
+  rendering-intent: auto;
+}
+
+.link {
+  fill: none;
+  stroke: $color-base2;
+  stroke-width: 1.5px;
+}
+
+.mapping {
+  fill: none;
+  opacity: 0.4;
+  stroke: $color-solar-orange;
+  stroke-width: 1.5px;
+}
+
+.mappingSelected {
+  opacity: 0.5;
+  stroke-width: 1.5px;
+  stroke: $color-solar-orange;
+}
+
+.currentMappingSelected {
+  opacity: 0.9;
+  stroke-width: 1.5px;
+  stroke: $color-solar-blue;
+}
+
+.ghostCircle.show {
+  display: block;
+}
+
+.ghostCircle, .activeDrag .ghostCircle {
+  display: none;
+}
+
+.db-spec-active {
+  fill: #fff;
+  stroke: #bbb;
+}
+
+.db-spec-inactive {
+  fill: transparent;
+  stroke: #ccc;
+}
+
+text.db-spec-text-active {
+  font-size: 6px;
+  font-weight: bold;
+}
+
+text.db-spec-text-inactive {
+  font-size: 6px;
+  fill: #ccc;
+}
+
+.db-spec-primary-key-no,
+.db-spec-foreign-key-no,
+.db-spec-auto-inc-no,
+.db-spec-unique-no {
+  color: #ccc;
+}
+
+#editor-recipes {
+  padding: 0 0 0 15px;
+
+  select.form-control {
+    height: 30px;
+    padding: 3px 10px;
+  }
+
+  ul.nav {
+    li.active {
+      a {
+        border-top: 1px solid #ddd;
+        border-right: 1px solid #ddd;
+        border-left: 1px solid #ddd;
+        color: #ff5a00;
+      }
+
+      a:hover {
+        background-color: #fff;
+      }
+    }
+
+    li {
+      a {
+        border-radius: 0;
+        border-bottom: 0 none;
+        outline: none;
+      }
+
+      a:hover {
+        background-color: #efefef;
+        color: #ff5a00;
+      }
+    }
+  }
+
+  #recipeTab {
+    li.list-group-item {
+      padding: 5px 10px;
+    }
+  }
+
+  .panel {
+    margin-bottom: 5px;
+    border-radius: 0;
+
+    .panel-heading {
+      padding: 5px 10px 0 10px;
+    }
+
+    .panel-body {
+      padding: 5px;
+    }
+  }
+
+  .recipePanel {
+    .panel-heading {
+      padding: 0 5px 5px 5px;
+
+      div {
+        padding: 0 5px;
+      }
+
+      .recipeMode {
+        font-size: 0.9em;
+        padding: 3px;
+      }
+
+      .recipeButtons {
+        button {
+          display: block;
+          margin-top: 3px;
+        }
+      }
+    }
+
+    b {
+      font-size: 0.9em;
+    }
+
+    .targetList {
+      padding-left: 10px;
+    }
+
+    #transformations,
+    #atomictransformations {
+      .alert {
+        margin-top: 15px;
+      }
+
+      .atomicTransfomerSelectBoxes {
+        div {
+          width:49%;
+
+          select {
+            width: 100%;
+          }
+        }
+      }
+    }
+
+    .mappingsTable {
+      table-layout: fixed;
+
+      .column {
+        padding: 8px 0;
+
+        #sortableSourceIds {
+          .content {
+            //border-left: 1px solid #ccc;
+            //border-top: 1px solid #ccc;
+            //border-bottom: 1px solid #ccc;
+            text-align: right;
+          }
+        }
+
+        #sortableTargetIds {
+          .content {
+            //border: 1px solid #ccc;
+            //border-left: 2px dashed #333;
+          }
+        }
+
+        .sortableIds {
+          list-style-type: none;
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          //overflow: hidden;
+
+          li {
+            margin: 0;
+            padding: 0 0 5px 0;
+            cursor: pointer;
+            background-color: #fff;
+
+            .content {
+              font-size: 13px;
+              //overflow: hidden;
+              //text-overflow: ellipsis;
+              white-space: nowrap;
+              padding: 5px 0;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .table {
+    margin-bottom: 0;
+  }
+
+  .saveRecipeButtons {
+    border-top: 1px dotted #ccc;
+    padding-top: 5px;
+
+    .alert {
+      padding: 6px 8px 8px 8px;
+      margin: 0 0 0 5px;
+    }
+  }
+}
+
+.editor-resources {
+  .saveResourcesButton {
+    border-top: 1px dotted #ccc;
+    padding-top: 5px;
+
+    .alert {
+      padding: 6px 8px 8px 8px;
+      margin: 0 0 0 5px;
+    }
+  }
+}
+
+.editor-settings {
+  .saveSettingsButton {
+    border-top: 1px dotted #ccc;
+    padding-top: 5px;
+
+    .alert {
+      padding: 6px 8px 8px 8px;
+      margin: 0 0 0 5px;
+    }
+  }
+}
+
+#elementsTab {
+  border-top: 1px solid #ddd;
+
+  #sourceElementsForDisplay {
+    padding-left: 0;
+  }
+
+  #targetElementsForDisplay {
+    padding: 0;
+  }
+
+  #sourceElementsForDisplay,
+  #targetElementsForDisplay {
+    .selected {
+      background-color: green;
+    }
+
+    .unselected {
+      background-color: yellow;
+    }
+
+    .generalButtons {
+      border-bottom: 1px dotted #ccc;
+      margin: 10px 0;
+      padding: 10px 0;
+    }
+
+    .elements {
+      select {
+        width: 100%;
+      }
+    }
+  }
+}
+
+#editor-pane {
+  .nodeToolTip {
+    background-color: #fff;
+    width: 350px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1001;
+    box-shadow: 0 1px 2px 0 #656565;
+    border: 1px solid #aaa;
+    border-radius: 5px;
+    word-wrap: break-word;
+
+    .title {
+      border-bottom: 1px solid #ccc;
+
+      padding: 10px 5px;
+      font-weight: bold;
+    }
+
+    .content {
+      .recipe {
+        padding: 5px;
+        font-weight: bold;
+        font-size: 12px;
+        text-decoration: underline;
+      }
+
+      .ids {
+        font-size: 12px;
+        padding: 0 0 0 20px;
+
+        li {
+
+        }
+      }
+
+      .information {
+        font-size: 12px;
+        padding: 5px;
+        .key {
+          font-weight: bold;
+        }
+      }
+    }
+  }
+}
+
+.versionTable {
+  .dfasdl {
+  }
+
+  .version {
+    width: 100px;
+  }
+}

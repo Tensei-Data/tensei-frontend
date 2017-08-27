@@ -1,0 +1,123 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(resource: ConnectionInformationResource, groups: Set[Group], userNames: Set[UserNameInfo])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/confirm.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/overlayWait.js")"></script>
+}
+
+@myCss = {
+  <link rel="stylesheet" href="@routes.Assets.versioned("stylesheets/connectionresources.css")">
+}
+
+@base(Messages("models.connectionInformation"), customScripts = myScripts, customCss = myCss) {
+  <h1>@Messages("models.connectionInformation")</h1>
+  <table class="table table-striped">
+    <tbody>
+      <tr>
+        <td class="parameter">
+          @Messages("models.connectionInformation.id")
+        </td>
+        <td>
+          @resource.id
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+          @Messages("models.connectionInformation.uri")
+        </td>
+        <td>
+          @resource.connection.uri
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+        @Messages("models.connectionInformation.language_tag")
+        </td>
+        <td>
+          @resource.connection.languageTag.fold {
+            @Messages("models.connectionInformation.language_tag.undefined")
+          } { lt =>
+            @if(lt == "und") {
+              @Messages("models.connectionInformation.language_tag.undefined")
+            } else {
+              @{java.util.Locale.forLanguageTag(lt).getDisplayLanguage} (@lt)
+            }
+          }
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+          @Messages("models.connectionInformation.username") / @Messages("models.connectionInformation.password")
+        </td>
+        <td>
+          @if(resource.connection.username.isDefined || resource.connection.password.isDefined) {
+            <span class="glyphicon glyphicon-eye-close"></span>
+          } else {
+            <span class="glyphicon glyphicon-eye-open"></span>
+          }
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+          @Messages("models.connectionInformation.checksum")
+        </td>
+        <td>
+          @if(resource.connection.checksum.isDefined) {
+            <span class="glyphicon glyphicon-ok"></span>
+          } else {
+            <span class="glyphicon glyphicon-remove"></span>
+          }
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">@Messages("models.ownerId")</td>
+        <td>@userNames.find(_.id == resource.ownerId).map(_.name)</td>
+      </tr>
+      <tr>
+        <td class="parameter">@Messages("models.groupOwnership")</td>
+        <td>@groups.find(_.id == resource.groupId).map(_.name)</td>
+      </tr>
+      <tr>
+        <td class="parameter">@Messages("models.groupPermissions")</td>
+        <td>@resource.groupPermissions.mkString(", ")</td>
+      </tr>
+      <tr>
+        <td class="parameter">@Messages("models.worldPermissions")</td>
+        <td>@resource.worldPermissions.mkString(", ")</td>
+      </tr>
+    </tbody>
+  </table>
+  @resource.id.fold(Html("")) { id =>
+    <a class="btn btn-primary" href="@routes.ConnectionInformationsController.edit(id)">@Messages("ui.edit")</a>
+    <a class="btn btn-danger" data-confirm="@Messages("ui.are_you_sure")" href="@routes.ConnectionInformationsController.destroy(id)">@Messages("ui.delete")</a>
+    @if(resource.connection.uri.getScheme.startsWith("jdbc")) {
+      <a class="btn btn-success" data-overlay="@Messages("ui.create.dfasdl.database")" href="@routes.DFASDLResourcesController.generateDfasdl(id)">@Messages("ui.new.model", Messages("models.dfasdlresource"))</a>
+    }
+    @if((resource.connection.uri.getScheme.startsWith("file") || resource.connection.uri.getScheme.startsWith("http") || resource.connection.uri.getScheme.startsWith("https") || resource.connection.uri.getScheme.startsWith("ftp") || resource.connection.uri.getScheme.startsWith("ftps") || resource.connection.uri.getScheme.startsWith("sftp")) && resource.connection.uri.toString.endsWith(".json")) {
+      <a class="btn btn-success" data-overlay="@Messages("ui.create.dfasdl.file")" href="@routes.DFASDLResourcesController.generateDfasdl(id)">@Messages("ui.new.model", Messages("models.dfasdlresource"))</a>
+    }
+    @if((resource.connection.uri.getScheme.startsWith("file") || resource.connection.uri.getScheme.startsWith("http") || resource.connection.uri.getScheme.startsWith("https") || resource.connection.uri.getScheme.startsWith("ftp") || resource.connection.uri.getScheme.startsWith("ftps") || resource.connection.uri.getScheme.startsWith("sftp")) && resource.connection.uri.toString.endsWith(".csv")) {
+      <a class="btn btn-success" href="@routes.DFASDLResourcesController.configureDfasdlFromCsv(id)">@Messages("ui.new.model", Messages("models.dfasdlresource"))</a>
+    }
+  }
+  <a class="btn btn-default" href="@routes.ConnectionInformationsController.index()">@Messages("ui.back")</a>
+}

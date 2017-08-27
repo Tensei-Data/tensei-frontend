@@ -1,0 +1,78 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@import com.wegtam.tensei.adt.AgentInformation
+@import com.wegtam.tensei.adt.RuntimeStats
+@(information: AgentInformation)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@base(Messages("ui.agent.details", information.id)) {
+  <div class="clearfix pageTitle">
+    <span class="glyphicon glyphicon-cloud" aria-hidden="true"></span>
+    <span>@Messages("ui.agent.details", information.id)</span>
+  </div>
+
+  @defining(information.workingState.fold(Map.empty[String, RuntimeStats])(s => s.runtimeStats)) { runtimeStats =>
+    @if(runtimeStats.isEmpty) {
+      <div class="alert alert-warning" role="alert">
+        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+        <span class="sr-only">Error:</span>
+        No detailed agent informations are available!
+      </div>
+    } else {
+      <table class="table">
+        <thead>
+          <tr>
+            <th>@Messages("ui.agent.details.node")</th>
+            <th>@Messages("ui.agent.details.mem.free")</th>
+            <th>@Messages("ui.agent.details.mem.used")</th>
+            <th>@Messages("ui.agent.details.load")</th>
+            <th>@Messages("ui.agent.details.cpus")</th>
+          </tr>
+        </thead>
+        <tbody>
+        @for(nodeStats <- runtimeStats) {
+          @defining((nodeStats._2.totalMemory - nodeStats._2.freeMemory).toDouble * 100 / nodeStats._2.totalMemory.toDouble) { memoryUsed =>
+            <tr>
+              <td>@nodeStats._1</td>
+              <td class="@if(memoryUsed < 70) {bg-success} else {@if(memoryUsed < 90) {bg-warning} else {bg-danger}}">
+                @{nodeStats._2.freeMemory / 1024 / 1024} MB (@{"%.2f".format(100 - memoryUsed)}%)
+              </td>
+              <td class="@if(memoryUsed < 70) {bg-success} else {@if(memoryUsed < 90) {bg-warning} else {bg-danger}}">
+                @{(nodeStats._2.totalMemory - nodeStats._2.freeMemory) / 1024 / 1024} MB (@{"%.2f".format(memoryUsed)}%)
+              </td>
+              @if(nodeStats._2.systemLoad.isDefined) {
+                <td class="@if(nodeStats._2.systemLoad.getOrElse(0.0) < 4) {bg-success} else { @if(nodeStats._2.systemLoad.getOrElse(0.0) < 8) {bg-warning} else {bg-danger} }">
+                @{"%.2f".format(nodeStats._2.systemLoad.getOrElse(0.0))}
+                </td>
+              } else {
+                <td class="text-warning">
+                @Messages("ui.agent.details.no-load-available")
+                </td>
+              }
+              <td class="@if(nodeStats._2.processors < 2) {bg-danger} else {@if(nodeStats._2.processors < 4) {bg-warning} else {bg-success}}">
+              @nodeStats._2.processors
+              </td>
+            </tr>
+          }
+        }
+        </tbody>
+      </table>
+    }
+  }
+}

@@ -1,0 +1,33 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(nodeName: String, memoryStats: MemoryStats, loadStats: SystemLoadStats, tooltipText: String)(implicit messages: Messages, webJarAssets: WebJarAssets)
+
+<div class="agent-node-container pull-left" data-toggle="popover" data-placement="top" data-title="@nodeName" data-content="@tooltipText" style="cursor: pointer; width: 34px;">
+  <svg class="agent-node-svg" height="34" width="34">
+    <g>
+      <rect class="memory-free" height="16" width="16" fill="@if(memoryStats.freePercentage < 10) {#f2dede} else {@if(memoryStats.freePercentage < 30) {#fcf8e3} else {#dff0d8}}" data-memory="@memoryStats.free" x="0" y="0"></rect>
+      <text x="8" y="12" text-anchor="middle" font-size="12" fill="#000000">F</text>
+      <rect class="memory-used" height="16" width="16" fill="@if(memoryStats.usedPercentage < 70) {#dff0d8} else {@if(memoryStats.usedPercentage < 90) {#fcf8e3} else {#f2dede}}" data-memory="@memoryStats.total" x="0" y="18"></rect>
+      <text x="8" y="30" text-anchor="middle" font-size="12" fill="#000000">U</text>
+      <rect class="system-load" height="16" width="16" fill="@if(loadStats.load < 4) {#dff0d8} else {@if(loadStats.load < 8) {#fcf8e3} else {#f2dede}}" data-memory="@loadStats.load" x="18" y="0"></rect>
+      <text x="26" y="12" text-anchor="middle" font-size="12" fill="#000000">L</text>
+      <rect class="system-cpus" height="16" width="16" fill="@if(loadStats.processors < 2) {#f2dede} else {@if(loadStats.processors < 4) {#fcf8e3} else {#dff0d8}}" data-memory="@loadStats.processors" x="18" y="18"></rect>
+      <text x="26" y="30" text-anchor="middle" font-size="12" fill="#000000">C</text>
+    </g>
+  </svg>
+</div>

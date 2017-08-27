@@ -1,0 +1,98 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(entries: Seq[TransformationConfiguration], allowedConfigurations: Option[Int], connections: Seq[ConnectionInformationResource])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/confirm.js")"></script>
+}
+
+@myCss = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/transformationconfigurations.css")">
+}
+
+@base(Messages("ui.transformationconfiguration.title"), customCss = myCss, customScripts = myScripts) {
+  <div class="clearfix pageTitle">
+    <span class="glyphicon glyphicon-briefcase" aria-hidden="true"></span>
+    <span>@Messages("ui.mainnavbar.transformationConfigurations")</span>
+    @if(allowedConfigurations.getOrElse(0) > entries.length) {
+      <a href="@routes.TransformationConfigurationsController.add()" class="btn btn-primary btn-sm pull-right">@Messages("ui.new.model", Messages("models.transformationconfiguration"))</a>
+    } else {
+      <small class="licenseMaxInfoForButton">@Messages("ui.license.maximum", allowedConfigurations.getOrElse(0), Messages("ui.license.configurations"))</small><a href="#" class="btn btn-primary btn-sm pull-right disabled">@Messages("ui.new.model", Messages("models.transformationconfiguration"))</a>
+    }
+  </div>
+
+  @if(entries.nonEmpty) {
+    <table class="table index">
+      <thead>
+        <tr>
+          <th></th>
+          <th>@Messages("models.transformationconfiguration.id") (@Messages("models.transformationconfiguration.name"))</th>
+          <th>@Messages("models.transformationconfiguration.sources")</th>
+          <th>@Messages("models.transformationconfiguration.target")</th>
+          <th>@Messages("models.cookbook")</th>
+        </tr>
+      </thead>
+      <tbody>
+      @for(entry <- entries) {
+        <tr>
+          <td>
+            @entry.id.fold(Html("")) { id =>
+              <a class="btn btn-xs" href="@routes.TransformationConfigurationsController.edit(id)">@Messages("ui.edit")</a>
+              <a class="btn btn-xs" data-confirm="@Messages("ui.are_you_sure")" href="@routes.TransformationConfigurationsController.destroy(id)">@Messages("ui.delete")</a>
+            }
+            @if(entry.dirty) {
+              <span class="glyphicon glyphicon-alert text-danger" style="cursor: default;" title="@Messages("models.transformationconfiguration.dirty")" aria-hidden="true"></span>
+            }
+          </td>
+          <td>
+            @entry.id.fold(Html("")) { id =>
+              <a href="@routes.TransformationConfigurationsController.show(id)">@entry.id (@entry.name)</a>
+            }
+          </td>
+          <td>
+            <ul>
+            @for(c <- entry.sourceConnections) {
+              <li>
+                <a href="@routes.ConnectionInformationsController.show(c.connectionInformationId)">@connections.find(_.id.contains(c.connectionInformationId)).map(_.connection.uri)</a>
+              </li>
+            }
+            </ul>
+          </td>
+          <td><a href="@routes.ConnectionInformationsController.show(entry.targetConnection.connectionInformationId)">@connections.find(_.id.contains(entry.targetConnection.connectionInformationId)).map(_.connection.uri)</a></td>
+          <td>
+            @entry.cookbook.id.fold(Html("")) { id =>
+              <a href="@routes.CookbookResourcesController.show(id)">@entry.cookbook.cookbook.id</a>
+            }
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  } else {
+    <div class="panel panel-info panel-empty">
+      <div class="panel-heading">
+        @Messages("ui.empty.model", Messages("models.transformationconfiguration"))
+      </div>
+      <div class="panel-body">
+        <a href="@routes.TransformationConfigurationsController.add()">@Messages("ui.empty.create")</a> @Messages("ui.empty.explain", Messages("models.transformationconfiguration"))
+      </div>
+    </div>
+  }
+}

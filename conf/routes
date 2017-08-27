@@ -1,0 +1,144 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET           /                                      controllers.ApplicationController.index
+# Login
+GET           /user/signin                           controllers.Authentication.login
+POST          /user/auth                             controllers.Authentication.authenticate
+# Logout
+GET           /user/signout                          controllers.Authentication.logout
+# Setup
+GET           /setup                                 controllers.Authentication.setup
+POST          /setup/create                          controllers.Authentication.createAdminAccount
+# Unlocking an account
+GET           /user/unlock/:token                    controllers.ApplicationController.unlock(token: String)
+POST          /user/unlocking                        controllers.Authentication.unlockUser
+
+# Reverse routing for javascript code.
+GET          /jsroutes                               controllers.ApplicationController.javascriptRoutes
+
+# Administration
+GET         /administration/license                                         controllers.AdministrationController.license
+POST        /administration/license/import                                  controllers.AdministrationController.licenseImport
+GET         /administration/license/update                                  controllers.AdministrationController.licenseUpdate
+GET         /administration/accounts                                        controllers.AdministrationController.accounts
+GET         /administration/accounts/new                                    controllers.AdministrationController.addAccount
+POST        /administration/accounts                                        controllers.AdministrationController.createAccount
+GET         /administration/accounts/:id/edit                               controllers.AdministrationController.editAccount(id: Int)
+POST        /administration/accounts/:id                                    controllers.AdministrationController.updateAccount(id: Int)
+GET         /administration/accounts/:id/delete                             controllers.AdministrationController.destroyAccount(id: Int)
+GET         /administration/groups                                          controllers.AdministrationController.groups
+GET         /administration/groups/new                                      controllers.AdministrationController.createGroup
+GET         /administration/groups/:id/edit                                 controllers.AdministrationController.editGroup(id: Int)
+POST        /administration/groups/:id                                      controllers.AdministrationController.updateGroup(id: Int)
+GET         /administration/groups/:id/delete                               controllers.AdministrationController.destroyGroup(id: Int)
+
+# Agents
+GET         /agents/connected                                               controllers.AgentsController.agents
+GET         /agents/disconnected                                            controllers.AgentsController.agentsDisconnected
+GET         /agents/unauthorized                                            controllers.AgentsController.agentsUnauthorized
+GET         /agents/details/:id                                             controllers.AgentsController.agentDetails(id: String)
+
+# Agent run logs
+GET         /logs/show/:uuid                                                controllers.AgentRunLogsController.show(uuid: String)
+GET         /logs/socket                                                    controllers.AgentRunLogsController.webSocket
+
+# License presence check
+GET         /checkLicensePresence                                           controllers.ApplicationController.checkLicensePresence
+
+# Server connection check
+GET         /checkServerConnection                                          controllers.ApplicationController.checkServerConnection
+GET         /serverConnectionMissing                                        controllers.ApplicationController.serverConnectionMissing
+
+# Cookbooks
+GET         /cookbookresources                                              controllers.CookbookResourcesController.index
+GET         /cookbookresources/new                                          controllers.CookbookResourcesController.add
+POST        /cookbookresources                                              controllers.CookbookResourcesController.create
+GET         /cookbookresources/import                                       controllers.CookbookResourcesController.importCookbook
+POST        /cookbookresources/processImport                                controllers.CookbookResourcesController.processImportCookbook
+GET         /cookbookresources/edit/:id                                     controllers.CookbookResourcesController.edit(id: Long)
+GET         /cookbookresources/:id                                          controllers.CookbookResourcesController.show(id: Long)
+PUT         /cookbookresources/:id                                          controllers.CookbookResourcesController.update(id: Long)
+GET         /cookbookresources/:id/delete                                   controllers.CookbookResourcesController.destroy(id: Long)
+GET         /cookbookresources/:id/dfasdls                                  controllers.CookbookResourcesController.showDfasdlIds(id: String)
+GET         /cookbookresources/:id/suggest/:mode                            controllers.CookbookResourcesController.suggestMappings(id: Long, mode: String)
+GET         /cookbookresources/export/:id                                   controllers.CookbookResourcesController.exportCookbook(id: Long)
+GET         /cookbookresources/exists/:name/:id                             controllers.CookbookResourcesController.cookbookExists(name: String, id: Long)
+
+# ConnectionInformations
+GET         /connectionresources                                            controllers.ConnectionInformationsController.index
+GET         /connectionresources/new                                        controllers.ConnectionInformationsController.add
+POST        /connectionresources                                            controllers.ConnectionInformationsController.create
+GET         /connectionresources/:id                                        controllers.ConnectionInformationsController.show(id: Long)
+GET         /connectionresources/:id/edit                                   controllers.ConnectionInformationsController.edit(id: Long)
+POST        /connectionresources/:id                                        controllers.ConnectionInformationsController.update(id: Long)
+GET         /connectionresources/:id/delete                                 controllers.ConnectionInformationsController.destroy(id: Long)
+GET         /connectionresources/helpers/autocomplete                       controllers.ConnectionInformationsController.autoComplete
+
+# Cron
+GET         /cron                                                           controllers.CronController.index
+GET         /cron/new                                                       controllers.CronController.add
+POST        /cron                                                           controllers.CronController.create
+GET         /cron/:id                                                       controllers.CronController.show(id: Long)
+GET         /cron/:id/edit                                                  controllers.CronController.edit(id: Long)
+POST        /cron/:id                                                       controllers.CronController.update(id: Long)
+GET         /cron/:id/delete                                                controllers.CronController.destroy(id: Long)
+
+# DFASDL-Resources
+GET         /dfasdlresources                                                controllers.DFASDLResourcesController.index
+GET         /dfasdlresources/new                                            controllers.DFASDLResourcesController.add
+GET         /dfasdlresources/gen/db/:id                                     controllers.DFASDLResourcesController.generateDfasdl(id: Long)
+GET         /dfasdlresources/gen/csv/configure/:id                          controllers.DFASDLResourcesController.configureDfasdlFromCsv(id: Long)
+POST        /dfasdlresources/gen/csv/:id                                    controllers.DFASDLResourcesController.generateDfasdlFromCSV(id: Long)
+POST        /dfasdlresources                                                controllers.DFASDLResourcesController.create
+GET         /dfasdlresources/:id                                            controllers.DFASDLResourcesController.show(id: Long)
+GET         /dfasdlresources/:id/edit                                       controllers.DFASDLResourcesController.edit(id: Long)
+POST        /dfasdlresources/:id                                            controllers.DFASDLResourcesController.update(id: Long)
+GET         /dfasdlresources/:id/delete                                     controllers.DFASDLResourcesController.destroy(id: Long)
+GET         /dfasdlresources/:id/versions                                   controllers.DFASDLResourcesController.showVersions(id: Long)
+GET         /dfasdlresources/:id/versions/:v                                controllers.DFASDLResourcesController.loadDfasdlVersion(id: Long, v: String)
+GET         /dfasdlresources/:id/version/:v                                 controllers.DFASDLResourcesController.diffVersions(id: Long, v: String)
+POST        /dfasdlresources/validate/dfasdl                                controllers.DFASDLResourcesController.validateDFASDL
+GET         /dfasdlresources/getIdFromName/:name                            controllers.DFASDLResourcesController.getIdFromName(name: String)
+
+# Help
+GET         /help/intro                                                     controllers.HelpController.intro
+
+# TransformationMessages
+GET         /transformationconfigs                                          controllers.TransformationConfigurationsController.index
+GET         /transformationconfigs/new                                      controllers.TransformationConfigurationsController.add
+POST        /transformationconfigs                                          controllers.TransformationConfigurationsController.create
+GET         /transformationconfigs/:id                                      controllers.TransformationConfigurationsController.show(id: Long)
+GET         /transformationconfigs/:id/edit                                 controllers.TransformationConfigurationsController.edit(id: Long)
+POST        /transformationconfigs/:id                                      controllers.TransformationConfigurationsController.update(id: Long)
+GET         /transformationconfigs/:id/delete                               controllers.TransformationConfigurationsController.destroy(id: Long)
+GET         /transformationconfigs/form/:cookbookId                         controllers.TransformationConfigurationsController.generateFormData(cookbookId: Long)
+
+# Dashboard
+GET         /dashboard                                                      controllers.DashboardController.index
+GET         /dashboard/socket                                               controllers.DashboardController.webSocket
+GET         /dashboard/enqueueTransformationConfiguration/:id               controllers.DashboardController.enqueue(id: Long)
+GET         /dashboard/stopWorkingQueueEntry/:uuid                          controllers.DashboardController.stopWorkingQueueEntry(uuid: String)
+
+# Work Queue
+GET         /queue                                                        controllers.WorkQueueController.index
+GET         /queue/:uuid/delete                                           controllers.WorkQueueController.destroy(uuid: String)
+
+# Work History
+GET         /history                                           controllers.WorkHistoryController.index(page: Int ?= 0)
+
+# Trigger
+GET         /trigger                                                        controllers.TriggerController.index
+GET         /trigger/new                                                    controllers.TriggerController.add
+POST        /trigger                                                        controllers.TriggerController.create
+GET         /trigger/:id                                                    controllers.TriggerController.show(id: Long)
+GET         /trigger/:id/edit                                               controllers.TriggerController.edit(id: Long)
+POST        /trigger/:id                                                    controllers.TriggerController.update(id: Long)
+GET         /trigger/:id/delete                                             controllers.TriggerController.destroy(id: Long)
+
+# Map static resources from the /public folder to the /assets URL path
+GET         /assets/*file                                                   controllers.Assets.versioned(path="/public", file: Asset)
+# Use helper from WebJar-Play to ease access to assets included via webjars.
+GET         /webjars/*file                                                  controllers.WebJarAssets.at(file)

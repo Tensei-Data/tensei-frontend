@@ -1,0 +1,42 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(title: Option[String] = None, message: Option[String] = None)
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>@title.getOrElse("HTTP 403 Forbidden")</title>
+    <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+    <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
+  </head>
+  <body>
+    <div class="container">
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 400px;">
+        <div class="panel panel-danger centering">
+          <div class="panel-heading">
+            @title.getOrElse("HTTP 403 Forbidden!")
+          </div>
+          <div class="panel-body">
+            <p>@message.getOrElse("You are not authorised to access this resource!")</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

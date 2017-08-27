@@ -1,0 +1,219 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(title: String, customHeader : Html = Html(""), customScripts : Html = Html(""), customCss : Html = Html(""), username : String = "")(content: Html)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@header = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/base.css")">
+}
+
+@cScripts = {
+  <script type="text/javascript" src="@routes.ApplicationController.javascriptRoutes()"></script>
+  @customScripts
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/testServerConnection.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/testLicensePresence.js")"></script>
+}
+
+@main(title, customHeader = header, customScripts = cScripts, customCss) {
+  <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#dashboard-navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="@routes.DashboardController.index()"></a>
+      </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="dashboard-navbar">
+        <ul class="nav navbar-nav">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">@Messages("ui.mainnavbar.resources")<span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu">
+              <li>
+                <a href="@routes.ConnectionInformationsController.index()">
+                  <span class="glyphicon glyphicon-transfer" aria-hidden="true"></span>
+                  @Messages("ui.mainnavbar.connectioninformationresources")
+                </a>
+              </li>
+              <li>
+                <a href="@routes.DFASDLResourcesController.index()">
+                  <span class="glyphicon glyphicon-education" aria-hidden="true"></span>
+                  @Messages("ui.mainnavbar.dfasdlresources")
+                </a>
+              </li>
+              <li class="divider"></li>
+              <li>
+                <a href="@routes.TransformationConfigurationsController.index()">
+                  <span class="glyphicon glyphicon-briefcase" aria-hidden="true"></span>
+                  @Messages("ui.mainnavbar.transformationConfigurations")
+                </a>
+              </li>
+              <li class="divider"></li>
+              <li>
+                <a href="@routes.AgentsController.agents()">
+                  <span class="glyphicon glyphicon-cloud" aria-hidden="true"></span>
+                  @Messages("ui.mainnavbar.agents")
+                </a>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <a href="@routes.CookbookResourcesController.index()">
+              <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+              @Messages("ui.mainnavbar.cookbooks")
+            </a>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+              @Messages("ui.mainnavbar.services")<span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" role="menu">
+              <li>
+                <a href="@routes.CronController.index()">
+                  <span class="glyphicon glyphicon-time" aria-hidden="true"></span>
+                  @Messages("ui.mainnavbar.crons")
+                </a>
+              </li>
+              <li>
+                <a href="@routes.TriggerController.index()">
+                  <span class="glyphicon glyphicon-flag" aria-hidden="true"></span>
+                  @Messages("ui.mainnavbar.triggers")
+                </a>
+              </li>
+              <li>
+                <a href="@routes.WorkQueueController.index()">
+                  <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+                  @Messages("ui.mainnavbar.tcqueue")
+                </a>
+              </li>
+            </ul>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <span class="glyphicon glyphicon-signal" aria-hidden="true"></span>
+              @Messages("ui.mainnavbar.statistics")<span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" role="menu">
+              <li>
+                <a href="@routes.WorkHistoryController.index(0)">
+                  <span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span>
+                  @Messages("ui.mainnavbar.lasttk")
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+        @*<form class="navbar-form navbar-left" role="search">*@
+          @*<div class="form-group">*@
+            @*<input type="text" class="form-control" placeholder="@Messages("ui.mainnavbar.search-placeholder")">*@
+          @*</div>*@
+          @*<button type="submit" class="btn btn-default">@Messages("ui.mainnavbar.search")</button>*@
+        @*</form>*@
+        <ul class="nav navbar-nav navbar-right">
+          @if(!username.isEmpty) {
+            <li class="username">@Messages("ui.mainnavbar.name", username)</li>
+          }
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">@Messages("ui.mainnavbar.help")<span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="@routes.HelpController.intro()">@Messages("ui.mainnavbar.help.intro")</a></li>
+              <li><a href="https://www.wegtam.com/products/tensei-data/docs" target="_blank">@Messages("ui.mainnavbar.help.online") <span class="glyphicon glyphicon-new-window" aria-hidden="true"></span></a></li>
+            </ul>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">@Messages("ui.mainnavbar.admin")<span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="@routes.AdministrationController.accounts()">@Messages("ui.mainnavbar.accounts")</a></li>
+              <li><a href="@routes.AdministrationController.groups()">@Messages("ui.mainnavbar.groups")</a></li>
+              <li><a href="@routes.AdministrationController.license()">@Messages("ui.mainnavbar.license")</a></li>
+            </ul>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">@Messages("ui.mainnavbar.account")<span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="@routes.Authentication.logout()">@Messages("ui.mainnavbar.account.signout")</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div><!-- /.navbar-collapse -->
+    </div>
+  </div>
+
+  <div class="container-fluid wrap">
+    @if(flash.get("error").exists(_.nonEmpty)) {
+      <div class="alert alert-danger">
+      @flash.get("error").filter(_.nonEmpty).map { message =>
+        <p>
+          <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+          <span class="sr-only">Error:</span>
+          @Html(message)
+        </p>
+      }
+      </div>
+    }
+    @if(flash.get("warning").exists(_.nonEmpty)) {
+      <div class="alert alert-warning">
+      @flash.get("warning").filter(_.nonEmpty).map { message =>
+        <p>
+          <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+          <span class="sr-only">Error:</span>
+          @Html(message)
+        </p>
+      }
+      </div>
+    }
+    @if(flash.get("success").exists(_.nonEmpty)) {
+      <div class="alert alert-success">
+        @flash.get("success").filter(_.nonEmpty).map { message =>
+          <p>
+            <span class="glyphicon glyphicon-ok-circle" aria-hidden="true"></span>
+            <span class="sr-only">Error:</span>
+            @Html(message)
+          </p>
+        }
+      </div>
+    }
+
+    <div id="serverConnectionBox" class="alert alert-danger" style="display:none">
+      <p>
+        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+        <span class="sr-only">Error:</span>
+        @Messages("ui.errors.serverConnection.title")
+      </p>
+    </div>
+
+    <div id="licenseMissingBox" class="panel panel-warning" style="display: none">
+      <div class="panel-heading">
+        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+        <span class="sr-only">Warning:</span>
+        @Messages("ui.license.nodata")
+      </div>
+      <div class="panel-body">
+        <p>@Messages("ui.license.nodata.message")</p>
+        <p><a href="@routes.AdministrationController.license()">@Messages("ui.license.nodata.open-license-page")</a></p>
+      </div>
+    </div>
+
+    @content
+  </div>
+}
+

@@ -1,0 +1,132 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(form: Form[forms.TransformationConfigurationForm.Data], canSave: Boolean, connections: Seq[ConnectionInformationResource], cookbooks: Seq[CookbookResource], dfasdlIdMappings: Map[String, String], groups: Seq[Group], userNames: Seq[UserNameInfo], target: Call)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import helpers.authorisationFormElements
+
+@helper.form(target, 'role -> "form", 'id -> "tkEditForm") {
+  @helper.CSRF.formField
+
+  @form.globalError.map { error =>
+    <p class="alert alert-danger">
+      <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+      <span class="sr-only">Error:</span>
+      @error.message
+    </p>
+  }
+
+  @flash.get("success").map { message =>
+    <p class="alert alert-success">
+      <span class="glyphicon glyphicon-ok-circle" aria-hidden="true"></span>
+      <span class="sr-only">Error:</span>
+      @message
+    </p>
+  }
+
+  <div class="form-group">
+    <label for="name">@Messages("models.transformationconfiguration.name")</label>
+    <input autofocus type="text" id="name" name="name" class="form-control" value="@form("name").value.getOrElse("")">
+    <div class="help-text">@Messages("ui.transformationConfiguration.name.info", Messages("models.transformationconfiguration.name"), Messages("errors.allowed.characters"))</div>
+    @form.errors("name").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  <div class="form-group">
+    <label for="cookbookResource">@Messages("models.cookbook")</label>
+    <select id="cookbookResource" name="cookbookResource" class="form-control">
+      <option value=""></option>
+      @if(cookbooks.nonEmpty) {
+        @for(cookbook <- cookbooks) {
+          <option value="@cookbook.id" @if(form("cookbookResource").value.isDefined && cookbook.id.contains(form("cookbookResource").value.getOrElse("0").toLong)) {
+            selected="selected"
+            }>@cookbook.cookbook.id</option>
+        }
+      }
+    </select>
+    <div class="help-text">@Messages("ui.transformationConfiguration.cookbook.info")</div>
+    @form.errors("cookbookResource").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  <div class="form-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">@Messages("models.transformationconfiguration.sourceConnections")</div>
+      <div class="panel-body" id="sourceConnectionMappings">
+      @if(form("cookbookResource").value.isDefined && form("cookbookResource").value.getOrElse("0") != "0") {
+        @helper.repeat(form("sources")) { field =>
+          <div class="form-group">
+          @defining(s"${field.name}.dfasdlId") { fieldName =>
+            <input type="hidden" id="@fieldName" name="@fieldName" value="@field("dfasdlId").value" readonly>
+          }
+          @defining(s"${field.name}.connectionInformationId") { fieldName =>
+            <label for="@fieldName" style="width: 300px;">@Messages("models.transformationconfiguration.sourceConnection.dfasdl", dfasdlIdMappings.getOrElse(field("dfasdlId").value.getOrElse(""), field("dfasdlId").value.getOrElse("UNDEFINED")))</label>
+            <select id="@fieldName" name="@fieldName">
+              <option value=""></option>
+              @for(c <- connections) {
+                <option value="@c.id" @if(form(fieldName).value.contains(c.id.fold("UNDEFINED")(id => id.toString))) { selected="selected" }>@c.connection.uri</option>
+              }
+            </select>
+            @form.errors(fieldName).map { error =>
+              <p class="alert-warning">@Messages(error.message, error.args: _*)</p>
+            }
+          }
+          </div>
+        }
+      }
+      </div>
+    </div>
+    <div class="help-text">@Messages("ui.transformationConfiguration.source.info")</div>
+    @form.errors("sources").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  <div class="form-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">@Messages("models.transformationconfiguration.targetConnection")</div>
+      <div class="panel-body" id="targetConnectionMapping">
+        @if(form("cookbookResource").value.isDefined && form("cookbookResource").value.getOrElse("0") != "0") {
+        <input type="hidden" name="target.dfasdlId" value="@form("target.dfasdlId").value">
+        <label for="target.ConnectionInformationId">@Messages("models.transformationconfiguration.targetConnection")</label>
+        <select id="target.ConnectionInformationId" name="target.connectionInformationId" class="form-control">
+          <option value=""></option>
+          @for(c <- connections) {
+            <option value="@c.id" @if(form("target.connectionInformationId").value == c.id.map(_.toString)) { selected="selected" }>@c.connection.uri</option>
+          }
+        </select>
+        }
+        @form.errors("target.connectionInformationId").map { error =>
+          <p class="alert-warning">@Messages(error.message)</p>
+        }
+      </div>
+    </div>
+    <div class="help-text">@Messages("ui.transformationConfiguration.target.info")</div>
+  </div>
+
+  @authorisationFormElements(form, userNames, groups)
+
+  @if(canSave) {
+    <button type="submit" class="btn btn-primary">@Messages("ui.save")</button>
+  } else {
+    <button type="reset" class="btn btn-primary" disabled="disabled">@Messages("ui.save")</button><small class="licenseMaxInfo">@Messages("ui.license.maximum", 0, Messages("ui.license.configurations"))</small>
+  }
+  <a href="@routes.TransformationConfigurationsController.index()" class="btn btn-default">@Messages("ui.cancel")</a>
+}
+

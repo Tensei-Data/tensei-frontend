@@ -1,0 +1,82 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(accounts: Seq[Account], allowedAccounts: Option[Int], groupNames: Map[Int, String])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/confirm.js")"></script>
+}
+
+@base(Messages("models.accounts"), customScripts = myScripts) {
+  <div class="clearfix pageTitle">
+    <span>@Messages("ui.mainnavbar.accounts")</span>
+    @if(accounts.length < allowedAccounts.getOrElse(0)) {
+      <a href="@routes.AdministrationController.addAccount()" class="btn btn-primary btn-sm pull-right">@Messages("ui.new.model", Messages("models.account"))</a>
+    } else {
+      <small class="licenseMaxInfoForButton">@Messages("ui.license.maximum", allowedAccounts.getOrElse(0), Messages("models.accounts"))</small>
+      <a href="#" class="btn btn-primary btn-sm pull-right disabled">@Messages("ui.new.model", Messages("models.account"))</a>
+    }
+  </div>
+
+  @if(accounts.nonEmpty) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>@Messages("models.account.id")</th>
+          <th>@Messages("models.account.email")</th>
+          <th>@Messages("models.account.groups")</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for(account <- accounts) {
+          <tr>
+            <td>
+              @account.id.fold(Html("")) { id =>
+                <a class="btn btn-xs" href="@routes.AdministrationController.editAccount(id)">@Messages("ui.edit")</a>
+                <a class="btn btn-xs" data-confirm="@Messages("ui.are_you_sure")" href="@routes.AdministrationController.destroyAccount(id)">@Messages("ui.delete")</a>
+              }
+            </td>
+            <td>
+              @account.id
+            </td>
+            <td>
+              @account.email
+            </td>
+            <td>
+              @for(group <- account.groupIds) {
+                <span class="usergroup">@groupNames.get(group)</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+  }else{
+    <div class="panel panel-info panel-empty">
+      <div class="panel-heading">
+      @Messages("ui.empty.model", Messages("models.accounts"))
+      </div>
+      <div class="panel-body">
+        <a href="@routes.AdministrationController.addAccount()">@Messages("ui.empty.create")</a> @Messages("ui.empty.explain", Messages("models.account")) <br />
+      </div>
+    </div>
+  }
+}

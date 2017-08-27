@@ -1,0 +1,94 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(entries: Seq[CookbookResource])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/confirm.js")"></script>
+}
+
+@base(Messages("ui.cookbook.title"), customScripts = myScripts) {
+  @if(flash.get("import").isDefined) {
+    <div class="alert alert-success">
+    @flash.get("import").map { message =>
+      <p>
+        <span class="glyphicon glyphicon-ok-circle" aria-hidden="true"></span>
+        <span class="sr-only"></span>
+        @Html(message)
+      </p>
+    }
+    </div>
+  }
+
+  @if(flash.get("importCancel").isDefined) {
+    <div class="alert alert-danger">
+    @flash.get("importCancel").map { message =>
+      <p>
+        <span class="sr-only"></span>
+        @Html(message)
+      </p>
+    }
+    </div>
+  }
+
+  <div class="clearfix pageTitle">
+    <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+    <span>@Messages("ui.mainnavbar.cookbooks")</span>
+    <a href="@routes.CookbookResourcesController.importCookbook()" class="btn btn-warning btn-sm pull-right" style="margin-left: 5px;">@Messages("ui.import")</a> <a href="@routes.CookbookResourcesController.add()" class="btn btn-primary btn-sm pull-right">@Messages("ui.new.model", Messages("models.cookbook"))</a>
+  </div>
+
+  @if(entries.nonEmpty) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 200px;"></th>
+          <th>@Messages("models.connectionInformation.id")</th>
+        </tr>
+      </thead>
+      <tbody>
+      @for(entry <- entries) {
+        <tr>
+          <td>
+            @entry.id.fold(Html("")) { id =>
+              <a class="btn btn-xs" href="@routes.CookbookResourcesController.edit(id).withFragment(s"/$id/mappings/")">@Messages("ui.edit")</a>
+              <a class="btn btn-xs" data-confirm="@Messages("ui.are_you_sure.cookbook")" href="@routes.CookbookResourcesController.destroy(id)">@Messages("ui.delete")</a>
+              <a class="btn btn-xs" href="@routes.CookbookResourcesController.exportCookbook(id)">@Messages("ui.export")</a>
+            }
+          </td>
+          <td>
+            @entry.id.fold(Html("")) { id =>
+              <a href="@routes.CookbookResourcesController.show(id)">@entry.cookbook.id</a>
+            }
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  } else {
+    <div class="panel panel-info panel-empty">
+      <div class="panel-heading">
+        @Messages("ui.empty.model", Messages("models.cookbook"))
+      </div>
+      <div class="panel-body">
+        <a href="@routes.CookbookResourcesController.add()">@Messages("ui.empty.create")</a> @Messages("ui.empty.explain", Messages("models.cookbook")) <br />
+        <a href="@routes.CookbookResourcesController.importCookbook()">@Messages("ui.import")</a>
+      </div>
+    </div>
+  }
+}

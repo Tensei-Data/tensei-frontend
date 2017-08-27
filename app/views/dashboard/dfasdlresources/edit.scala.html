@@ -1,0 +1,78 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(id: Long, form: Form[forms.DfasdlResourceForm.Data], groups: Seq[Group], userNames: Seq[UserNameInfo])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+@import dashboard.dfasdlresources.displayForm
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/togglePrivilegeSettings.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/lib/codemirror.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/mode/xml/xml.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/dialog/dialog.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/display/fullscreen.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/edit/matchbrackets.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/edit/matchtags.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/edit/closebrackets.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/edit/closetag.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/fold/foldcode.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/fold/foldgutter.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/fold/brace-fold.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/fold/xml-fold.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/fold/markdown-fold.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/fold/comment-fold.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/hint/show-hint.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/edit/trailingspace.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/hint/xml-hint.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/search/match-highlighter.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/search/search.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/codemirror/addon/selection/active-line.js")"></script>
+
+  <!-- Activate the editor. -->
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/dfasdl-codemirror.js")"></script>
+
+  <script type="text/javascript">
+          // Add the CSRF token from the hidden from field to all AJAX requests.
+          $.ajaxSetup({
+            headers: {
+              'Csrf-Token': $('input[name="csrfToken"]').val()
+            }
+          });
+  </script>
+}
+
+@myStyles = {
+  <link href="@routes.Assets.versioned("javascripts/codemirror/lib/codemirror.css")" rel="stylesheet"/>
+  <link href="@routes.Assets.versioned("javascripts/codemirror/addon/dialog/dialog.css")" rel="stylesheet"/>
+  <link href="@routes.Assets.versioned("javascripts/codemirror/addon/display/fullscreen.css")" rel="stylesheet"/>
+  <link href="@routes.Assets.versioned("javascripts/codemirror/addon/hint/show-hint.css")" rel="stylesheet"/>
+  <link href="@routes.Assets.versioned("javascripts/codemirror/addon/fold/foldgutter.css")" rel="stylesheet"/>
+  <link href="@routes.Assets.versioned("javascripts/codemirror/theme/ambiance.css")" rel="stylesheet"/>
+  <link href="@routes.Assets.versioned("javascripts/codemirror/theme/solarized.css")" rel="stylesheet"/>
+  <link href="@routes.Assets.versioned("stylesheets/dfasdl.css")" rel="stylesheet"/>
+  <style type="text/css">
+    .CodeMirror {
+      height: 500px;
+      border: 1px solid #93a1a1;
+    }
+  </style>
+}
+
+@base(Messages("ui.edit.model", Messages("models.dfasdlresource")), customScripts = myScripts, customCss = myStyles) {
+  @displayForm(form, groups, userNames, routes.DFASDLResourcesController.update(id))
+}

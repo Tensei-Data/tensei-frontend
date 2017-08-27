@@ -1,0 +1,52 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(agentName: String, agent: com.wegtam.tensei.adt.AgentInformation, tkid: Option[Long], nodeIndicators: Option[Iterable[Html]], ram: Option[Long] = None)(implicit messages: Messages, webJarAssets: WebJarAssets)
+
+@import dashboard.agents.timestamp
+
+<div class="agentEntry clearfix">
+  <div class="agentName col-xs-2"><a href="@routes.AgentsController.agentDetails(agentName)">@agentName</a> (@Messages("ui.agents.number-of-nodes", nodeIndicators.getOrElse(Iterable.empty[Html]).size, ram.getOrElse(0L).toDouble / 1024 / 1024 / 1024))</div>
+  <div class="agentNodes col-xs-3">
+  @if(nodeIndicators.isDefined) {
+    @for(node <- nodeIndicators) {
+      @node
+    }
+  } else {
+    @Messages("ui.dashboard.memory.notavailable")
+  }
+  </div>
+  <div class="agentState col-xs-1">
+    <b>@Messages("ui.dashboard.agent.auth")</b><br />
+    @agent.auth
+  </div>
+  <div class="agentUpdated col-xs-1">
+    <b>@Messages("ui.dashboard.agent.timestamp")</b><br />
+    <samp>@timestamp(agent.lastUpdated)</samp>
+  </div>
+  <div class="tk col-xs-1">
+    <b>@Messages("ui.agents.table.header.running")</b>
+    <div>@tkid</div>
+  </div>
+  <div class="status col-xs-3" id="agent-running-status-@agentName">
+  @agent.workingState.fold(Html(Messages("ui.dashboard.memory.notavailable"))) { workingState =>
+    <span class="source">Agent:</span><samp>@workingState.state</samp>
+    <br /><span class="source">Parser:</span><samp>@workingState.parser</samp>
+    <br /><span class="source">Processor:</span><samp>@workingState.processor</samp>
+  }
+  </div>
+</div>

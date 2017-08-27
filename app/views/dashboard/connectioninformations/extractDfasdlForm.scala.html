@@ -1,0 +1,72 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@import forms.ExtractDfasdlForm
+@(form: Form[forms.ExtractDfasdlForm.Data], target: Call)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@helper.form(target, 'role -> "form") {
+  @helper.CSRF.formField
+
+  @form.globalError.map { error =>
+    <p class="alert alert-danger">
+      <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+      <span class="sr-only">Error:</span>
+      @error.message
+    </p>
+  }
+
+  <div class="form-group">
+    <div class="checkboxes">
+      <label class="checkbox-inline">
+        <input type="checkbox" id="header" name="header" value="true" @if(form("header").value.contains("true")){checked="checked"}>
+        @Messages("ui.new.dfasdl.csv.header")
+      </label>
+    </div>
+    <div class="help-text">@Messages("ui.new.dfasdl.csv.header.help")</div>
+    @form.errors("header").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  <div class="form-group">
+    <label for="separator">@Messages("ui.new.dfasdl.csv.separator")</label>
+    <input type="text" id="separator" name="separator" class="form-control" value="@form("separator").value.getOrElse("")">
+    <div class="help-text">@Messages("ui.new.dfasdl.csv.separator.help")</div>
+    @form.errors("separator").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  <div class="form-group">
+    <label for="encoding">@Messages("ui.new.dfasdl.csv.encoding")</label>
+    <select class="form-control" id="encoding" name="encoding">
+      @defining(form("encoding").value) { enc =>
+        <option value="" @if(enc.isEmpty || enc.contains("")){selected="selected"}>@Messages("ui.new.dfasdl.csv.encoding.default")</option>
+        @for(l <- ExtractDfasdlForm.Charsets) {
+          <option value="@l" @if(enc.contains(l)){selected="selected"}>@l</option>
+        }
+      }
+    </select>
+    <div class="help-text">@Messages("ui.new.dfasdl.csv.encoding.help")</div>
+    @form.errors("encoding").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  <button type="submit" data-overlay="@Messages("ui.create.dfasdl.file")" class="btn btn-success">@Messages("ui.new.dfasdl.csv.configure.submit")</button>
+  <a href="@routes.ConnectionInformationsController.index()" class="btn btn-default">@Messages("ui.cancel")</a>
+}

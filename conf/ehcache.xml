@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Tensei Server GUI
+  ~
+  ~ Copyright (C) 2014 - 2014 Wegtam UG
+  ~
+  ~ Unauthorized copying of this file, via any medium is strictly prohibited!
+  ~ Proprietary and confidential
+  -->
+
+<ehcache>
+  <diskStore path="/tmp"/>
+
+  <defaultCache
+    diskPersistent="true"
+    maxEntriesLocalHeap="1000"
+    />
+
+</ehcache>

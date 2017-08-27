@@ -1,0 +1,82 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(entries: Seq[Cron] = List(), allowedCronjobs: Option[Int])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@base(Messages("ui.cron.title")) {
+  <div class="clearfix pageTitle">
+    <span class="glyphicon glyphicon-time" aria-hidden="true"></span>
+    <span>@Messages("ui.mainnavbar.crons")</span>
+    @if(allowedCronjobs.getOrElse(0) > entries.length) {
+      <a href="@routes.CronController.add()" class="btn btn-primary btn-sm pull-right">@Messages("ui.new.model", Messages("models.cron"))</a>
+    } else {
+      <small class="licenseMaxInfoForButton">@Messages("ui.license.maximum", allowedCronjobs.getOrElse(0), Messages("ui.license.cronjobs"))</small><a href="#" class="btn btn-primary btn-sm pull-right disabled">@Messages("ui.new.model", Messages("models.cron"))</a>
+    }
+  </div>
+
+  @if(entries.nonEmpty) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>@Messages("models.cron.id")</th>
+          <th>@Messages("models.transformationconfiguration")</th>
+          <th>@Messages("models.cron.format")</th>
+          <th>@Messages("models.cron.description")</th>
+          <th>@Messages("models.cron.active")</th>
+        </tr>
+      </thead>
+      <tbody>
+      @for(entry <- entries) {
+        <tr @if(entry.active){class="active"}>
+        <td>
+          @entry.id.fold(Html("")) { id =>
+            <a href="@routes.CronController.show(id)">Cronjob @entry.id</a>
+          }
+        </td>
+        <td>
+          <a href="@routes.TransformationConfigurationsController.show(entry.tkid)">@entry.tkid</a>
+        </td>
+        <td>
+          <samp>@entry.format</samp>
+        </td>
+        <td>
+          <small>@entry.description.fold(Messages("ui.cron.description.empty"))(d => d)</small>
+        </td>
+        <td>
+          @if(entry.active) {
+            <span class="text-success">@Messages("ui.activated")</span>
+          } else {
+            <span class="text-danger">@Messages("ui.deactivated")</span>
+          }
+        </td>
+      </tr>
+      }
+      </tbody>
+    </table>
+  } else {
+    <div class="panel panel-info panel-empty">
+      <div class="panel-heading">
+        @Messages("ui.empty.model", Messages("models.cron"))
+      </div>
+      <div class="panel-body">
+        <a href="@routes.CronController.add()">@Messages("ui.empty.create")</a> @Messages("ui.empty.explain", Messages("models.cron"))
+      </div>
+    </div>
+  }
+}

@@ -1,0 +1,77 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(form: Form[forms.DfasdlResourceForm.Data], groups: Seq[Group], userNames: Seq[UserNameInfo], target: Call)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import helpers.authorisationFormElements
+
+@helper.form(target, 'role -> "form") {
+  @helper.CSRF.formField
+
+  @form.globalError.map { error =>
+    <p class="alert alert-danger">
+      <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+      <span class="sr-only">Error:</span>
+      @error.message
+    </p>
+  }
+
+  <div class="form-group">
+    <label for="dfasdl.id">@Messages("models.dfasdlresource.dfasdl.id")</label>
+    <input autofocus type="text" id="dfasdl.id" name="dfasdl.id" class="form-control" value="@form("dfasdl.id").value">
+    <div class="help-text">
+      @Messages("ui.dfasdlresource.dfasdlid.info", Messages("models.dfasdlresource"), Messages("errors.allowed.characters"))
+    </div>
+    @form.errors("dfasdl.id").map { error =>
+      <p class="alert-warning">@Messages(error.message, error.args: _*)</p>
+    }
+  </div>
+  <div class="form-group">
+    <label for="dfasdl.version">@Messages("models.dfasdlresource.dfasdl.version")</label>
+    <input type="text" id="dfasdl.version" name="dfasdl.version" class="form-control" readonly value="@form("dfasdl.version").value">
+    <div class="help-text">@Messages("ui.dfasdlresource.version.info", Messages("models.dfasdlresource"))</div>
+    @form.errors("dfasdl.version").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+  <div class="form-group">
+    <label for="dfasdl.content">@Messages("models.dfasdlresource.dfasdl.content")</label>
+      <a style="margin: 0 5px 3px 3px;" onclick="validateDFASDL();" class="btn btn-success">
+        <span class="glyphicon glyphicon-refresh"></span> @Messages("ui.validate", Messages("models.dfasdlresource"))
+      </a><span id="notWellFormed" class="hidden">@Messages("validate.dfasdl.notwellformed")</span><span id="validationResult"></span>
+      <div id="errorMessage"></div>
+      <textarea id="dfasdl.content" name="dfasdl.content" class="form-control resizable" rows="10">@form("dfasdl.content").value</textarea>
+    <div class="help-text">@Messages("ui.dfasdlresource.dfasdl.content.info", Messages("models.dfasdlresource"))</div>
+    @form.errors("dfasdl.content").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+  <div class="editor-shortcuts">
+    <div class="header">@Messages("ui.dfasdlresource.dfasdl.content.shortcuts")</div>
+    <ul class="examples">
+      <li>@Html(Messages("ui.dfasdlresource.dfasdl.content.shortcuts.completion"))</li>
+      <li>@Html(Messages("ui.dfasdlresource.dfasdl.content.shortcuts.fold"))</li>
+      <li>@Html(Messages("ui.dfasdlresource.dfasdl.content.shortcuts.fullscreen"))</li>
+      <li>@Html(Messages("ui.dfasdlresource.dfasdl.content.shortcuts.search"))</li>
+    </ul>
+  </div>
+
+  @authorisationFormElements(form, userNames, groups)
+
+  <button type="submit" class="btn btn-primary">@Messages("ui.save")</button>
+  <a href="@routes.DFASDLResourcesController.index()" class="btn btn-default">@Messages("ui.cancel")</a>
+}

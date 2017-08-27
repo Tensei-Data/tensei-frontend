@@ -1,0 +1,50 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(title: String, customHeader : Html = Html(""), customScripts : Html = Html(""), customCss : Html = Html(""))(content: Html)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>@title</title>
+    <link href="@routes.WebJarAssets.at(webJarAssets.locate("bootstrap.min.css"))" rel="stylesheet"/>
+    <link href="@routes.WebJarAssets.at(webJarAssets.locate("bootstrap-theme.min.css"))" rel="stylesheet"/>
+    <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+    <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
+    @customCss
+    @customHeader
+  </head>
+  <body>
+    @content
+
+    <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("jquery.min.js"))"></script>
+    <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("bootstrap.min.js"))"></script>
+    <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("bootbox.js"))"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        $("body").popover({
+          html: true,
+          selector: '[data-toggle=popover]'
+        });
+      });
+    </script>
+
+    @customScripts
+
+  </body>
+</html>

@@ -1,0 +1,66 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(id: Int, form: Form[forms.AccountForms.AdminData])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@base(Messages("ui.edit.model", Messages("models.account"))) {
+  @helper.form(routes.AdministrationController.updateAccount(id), 'role -> "form") {
+    @helper.CSRF.formField
+
+    @form.globalError.map { error =>
+      <p class="alert alert-danger">
+        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+        <span class="sr-only">Error:</span>
+        @error.message
+      </p>
+    }
+
+    @flash.get("success").map { message =>
+      <p class="alert alert-success">
+        <span class="glyphicon glyphicon-ok-circle" aria-hidden="true"></span>
+        <span class="sr-only">Error:</span>
+        @message
+      </p>
+    }
+
+    <div class="form-group">
+      <label for="email.main">@Messages("models.account.email")</label>
+      <input type="email" id="email.main" name="email.main" class="form-control" value="@form("email.main").value.getOrElse("")">
+      @form.errors("email").map { error =>
+        <p class="alert-warning">@Messages(error.message)</p>
+      }
+      @form.errors("email.main").map { error =>
+        <p class="alert-warning">@Messages(error.message)</p>
+      }
+    </div>
+    <div class="form-group">
+      <label for="email.confirm">@Messages("models.account.emailConfirm")</label>
+      <input type="email" id="email.confirm" name="email.confirm" class="form-control" value="@form("email.confirm").value.getOrElse("")">
+      @form.errors("email.confirm").map { error =>
+        <p class="alert-warning">@Messages(error.message)</p>
+      }
+    </div>
+    <div class="form-group">
+      <label class="checkbox-inline"><input type="checkbox" id="isAdmin" name="isAdmin" value="true" @if(form("isAdmin").value.getOrElse("false") == "true") { checked="checked" }>@Messages("models.account.isAdmin")</label>
+    </div>
+    <button type="submit" class="btn btn-primary">@Messages("ui.save")</button>
+
+    <a href="@routes.AdministrationController.accounts()" class="btn btn-default">@Messages("ui.cancel")</a>
+  }
+}

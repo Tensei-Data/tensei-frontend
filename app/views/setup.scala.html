@@ -1,0 +1,95 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(form: Form[forms.SetupForm.Data])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@header = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/signup.css")">
+}
+
+@main(Messages("ui.signup.title"), customHeader = header) {
+  <div class="container">
+    <div class="middler">
+      <div class="col-xs-offset-1 col-xs-10 col-sm-offset-3 col-sm-6 col-md-offset-4 col-md-4">
+        <div class="panel panel-primary centering">
+          <div class="panel-heading">
+            <div class="panel-logo">
+              @Messages("ui.signup.title")
+            </div>
+          </div>
+          <div class="panel-body">
+          @helper.form(routes.Authentication.createAdminAccount(), 'role -> "form") {
+            @helper.CSRF.formField
+
+            @form.globalError.map { error =>
+              <p class="alert alert-danger">
+                <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+                <span class="sr-only">Error:</span>
+                @Messages(error.message, error.args: _*)
+              </p>
+            }
+
+            <div class="form-group">
+              <label for="email">@Messages("forms.signup.email")</label>
+              <input type="email" class="form-control" name="email" placeholder="@Messages("forms.signup.email-placeholder")" id="email" value="@form("email").value" autofocus>
+              @if(form.errors("email").nonEmpty) {
+                <div class="alert-warning">
+                  <ul>
+                  @form.errors("email").map { error =>
+                    <li><span>@Messages(error.message, error.args: _*)</span> </li>
+                  }
+                  </ul>
+                </div>
+              }
+            </div>
+            <div class="form-group">
+              <label for="password">@Messages("forms.signup.password")</label>
+              <input type="password" class="form-control" name="password.main" id="password.main" placeholder="@Messages("forms.signup.password-placeholder")">
+              @if(form.errors("password").nonEmpty || form.errors("password.main").nonEmpty) {
+                <div class="alert-warning">
+                  <ul>
+                    @form.errors("password.main").map { error =>
+                      <li><span>@Messages(error.message, error.args: _*)</span></li>
+                    }
+                    @form.errors("password").map { error =>
+                      <li><span>@Messages(error.message, error.args: _*)</span></li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+            <div class="form-group">
+              <label for="password.confirm">@Messages("forms.signup.password-confirmation")</label>
+              <input type="password" class="form-control" name="password.confirm" id="password.confirm" placeholder="@Messages("forms.signup.password-confirmation-placeholder")">
+              @if(form.errors("password.confirm").nonEmpty) {
+                <div class="alert-warning">
+                  <ul>
+                  @form.errors("password.confirm").map { error =>
+                    <li><span>@Messages(error.message, error.args: _*)</span></li>
+                  }
+                  </ul>
+                </div>
+              }
+            </div>
+            <button type="submit" class="btn btn-default">@Messages("forms.signup.submit")</button>
+          }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

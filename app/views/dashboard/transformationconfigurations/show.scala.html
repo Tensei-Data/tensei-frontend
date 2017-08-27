@@ -1,0 +1,92 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(transformationConfig: TransformationConfiguration, connections: Seq[ConnectionInformationResource])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/confirm.js")"></script>
+}
+
+@myCss = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/transformationconfigurations.css")">
+}
+
+@base(Messages("ui.transformationconfiguration.title"), customScripts = myScripts, customCss = myCss) {
+  <h1>@Messages("ui.transformationconfiguration.title")</h1>
+  @if(transformationConfig.dirty) {
+    <div class="alert alert-danger">@Messages("models.transformationconfiguration.dirty")</div>
+  }
+  <table class="table table-striped">
+    <tbody>
+      <tr>
+        <td class="parameter">
+          @Messages("models.transformationconfiguration.id")
+        </td>
+        <td>
+          @transformationConfig.id
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+          @Messages("models.transformationconfiguration.name")
+        </td>
+        <td>
+          @transformationConfig.name
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+         @Messages("models.transformationconfiguration.sources")
+        </td>
+        <td>
+          <ul>
+          @for(c <- transformationConfig.sourceConnections) {
+            <li><a href="@routes.ConnectionInformationsController.show(c.connectionInformationId)">@connections.find(_.id.contains(c.connectionInformationId)).map(_.connection.uri)</a></li>
+          }
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+          @Messages("models.transformationconfiguration.target")
+        </td>
+        <td>
+          <ul>
+            <li><a href="@routes.ConnectionInformationsController.show(transformationConfig.targetConnection.connectionInformationId)">@connections.find(_.id.contains(transformationConfig.targetConnection.connectionInformationId)).map(_.connection.uri)</a></li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="parameter">
+          @Messages("models.cookbook")
+        </td>
+        <td>
+          @transformationConfig.cookbook.id.fold(Html("")) { id =>
+            <a href="@routes.CookbookResourcesController.show(id)">@transformationConfig.cookbook.cookbook.id</a>
+          }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  @transformationConfig.id.fold(Html("")) { id =>
+    <a class="btn btn-primary" href="@routes.TransformationConfigurationsController.edit(id)">@Messages("ui.edit")</a>
+    <a class="btn btn-danger" data-confirm="@Messages("ui.are_you_sure")" href="@routes.TransformationConfigurationsController.destroy(id)">@Messages("ui.delete")</a>
+  }
+  <a class="btn btn-default" href="@routes.TransformationConfigurationsController.index()">@Messages("ui.back")</a>
+}

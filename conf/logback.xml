@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+  <conversionRule conversionWord="coloredLevel" converterClass="play.api.libs.logback.ColoredLevel" />
+
+  <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <!--See also http://logback.qos.ch/manual/appenders.html#RollingFileAppender-->
+    <file>${application.home:-.}/logs/tensei-frontend.log</file>
+    <encoder>
+      <pattern>%date - [%level] - from %logger in %thread %n%message%n%xException%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <maxIndex>10</maxIndex>
+      <FileNamePattern>${application.home:-.}/tensei-frontend.log.%i</FileNamePattern>
+    </rollingPolicy>
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <MaxFileSize>5MB</MaxFileSize>
+    </triggeringPolicy>
+  </appender>
+
+  <appender name="async-file" class="ch.qos.logback.classic.AsyncAppender">
+    <appender-ref ref="file"/>
+    <queueSize>50000</queueSize>
+    <discardingThreshold>0</discardingThreshold>
+  </appender>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%coloredLevel - %date - %logger{15} - %message%n%xException{5}</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="play" level="INFO"/>
+  <logger name="application" level="INFO"/>
+  <logger name="slick" level="INFO"/>
+
+  <!-- Off these ones as they are annoying, and anyway we manage configuration ourself -->
+  <logger name="com.avaje.ebean.config.PropertyMapLoader" level="OFF"/>
+  <logger name="com.avaje.ebeaninternal.server.core.XmlConfigLoader" level="OFF"/>
+  <logger name="com.avaje.ebeaninternal.server.lib.BackgroundThread" level="OFF"/>
+  <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF"/>
+  <logger name="com.zaxxer.hikari" level="OFF"/>
+  <logger name="javax.management" level="ERROR"/>
+  <logger name="com.google.inject" level="ERROR"/>
+  <logger name="net.sf.ehcache" level="ERROR"/>
+  <logger name="org.jboss.netty" level="ERROR"/>
+  <logger name="io.netty" level="ERROR"/>
+
+  <!-- Set logging for all Akka library classes -->
+  <logger name="akka" level="INFO" />
+  <!-- Set a specific actor log level -->
+  <logger name="actors" level="INFO"/>
+
+  <root level="DEBUG">
+    <appender-ref ref="STDOUT"/>
+    <appender-ref ref="async-file"/>
+  </root>
+</configuration>

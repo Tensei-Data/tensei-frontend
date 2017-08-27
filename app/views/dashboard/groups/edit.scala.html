@@ -1,0 +1,54 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(id: Int, form: Form[forms.AccountForms.GroupData])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@base(Messages("ui.edit.model", Messages("models.group"))) {
+  @helper.form(routes.AdministrationController.updateGroup(id), 'role -> "form") {
+    @helper.CSRF.formField
+
+    @form.globalError.map { error =>
+      <p class="alert alert-danger">
+        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+        <span class="sr-only">Error:</span>
+        @error.message
+      </p>
+    }
+
+    @flash.get("success").map { message =>
+      <p class="alert alert-success">
+        <span class="glyphicon glyphicon-ok-circle" aria-hidden="true"></span>
+        <span class="sr-only">Error:</span>
+        @message
+      </p>
+    }
+
+    <div class="form-group">
+      <label for="name">@Messages("models.group.name")</label>
+      <input autofocus type="text" id="name" name="name" class="form-control" value="@form("name").value">
+      <div class="help-text"></div>
+      @form.errors("name").map { error =>
+        <p class="alert-warning">@Messages(error.message, error.args: _*)</p>
+      }
+    </div>
+    <button type="submit" id="submit" class="btn btn-primary">@Messages("ui.save")</button>
+
+    <a href="@routes.AdministrationController.groups()" class="btn btn-default">@Messages("ui.cancel")</a>
+  }
+}

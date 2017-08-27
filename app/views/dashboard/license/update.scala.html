@@ -1,0 +1,39 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@()(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@base(Messages("ui.license")) {
+  <h2>@Messages("ui.license.import")</h2>
+  <span id="disable-license-check" style="display: none;"></span>
+  @helper.form(action = routes.AdministrationController.licenseImport(), 'enctype -> "multipart/form-data") {
+    @helper.CSRF.formField
+
+    <div class="panel panel-default">
+      <div class="panel-heading">@Messages("ui.license.import.head")</div>
+      <div class="panel-body">
+        <div class="form-group">
+          <label for="licenseFile">@Messages("ui.import.file")</label>
+          <input type="file" name="licenseFile" id="licenseFile" accept=".license.gz">
+        </div>
+      </div>
+      <div class="panel-footer"><button type="submit" class="btn btn-default">@Messages("ui.import.button")</button></div>
+    </div>
+  }
+}

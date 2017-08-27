@@ -1,0 +1,106 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(entries: Seq[Trigger], transformationConfigurations: Seq[TransformationConfiguration], allowedTriggers: Option[Int])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myCss = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/trigger.css")">
+}
+
+@base(Messages("ui.trigger.title"), customCss = myCss) {
+  <div class="clearfix pageTitle">
+    <span class="glyphicon glyphicon-flag" aria-hidden="true"></span>
+    <span>@Messages("ui.mainnavbar.triggers")</span>
+    @if(allowedTriggers.getOrElse(0) > entries.length) {
+      <a href="@routes.TriggerController.add()" class="btn btn-primary btn-sm pull-right">@Messages("ui.new.model", Messages("models.trigger"))</a>
+    } else {
+      <small class="licenseMaxInfoForButton">@Messages("ui.license.maximum", allowedTriggers.getOrElse(0), Messages("ui.license.triggers"))</small><a href="@routes.TriggerController.add()" class="btn btn-primary btn-sm pull-right" disabled="disabled">@Messages("ui.new.model", Messages("models.trigger"))</a>
+    }
+  </div>
+
+  @if(entries.nonEmpty) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>@Messages("models.trigger.id")</th>
+          <th>@Messages("models.transformationconfiguration")</th>
+          <th>@Messages("ui.trigger.event") (@Messages("models.trigger.endpointuri"), @Messages("models.trigger.triggeringTransformation"))</th>
+          <th>@Messages("models.trigger.description")</th>
+          <th>@Messages("models.trigger.active")</th>
+        </tr>
+      </thead>
+      <tbody>
+      @for(entry <- entries) {
+        <tr class="@if(entry.active){active}">
+        <td>
+          @entry.id.fold(Html("")) { id =>
+            <a href="@routes.TriggerController.show(id)">Trigger-@id</a>
+          }
+        </td>
+        <td>
+          @transformationConfigurations.find(_.id.contains(entry.tkid)).fold {
+            <a href="@routes.TransformationConfigurationsController.show(entry.tkid)">@entry.tkid</a>
+          } {tc =>
+            <a href="@routes.TransformationConfigurationsController.show(entry.tkid)">@tc.id @tc.name</a>
+          }
+        </td>
+        <td>
+          @if(entry.endpointUri.isDefined) {
+            <samp>@entry.endpointUri</samp>
+          } else {
+            @transformationConfigurations.find(_.id == entry.triggerTkId).fold {
+              @entry.triggerTkId.fold(Html("")) { id =>
+                <a href="@routes.TransformationConfigurationsController.show(id)">@id</a>
+              }
+            } { tc =>
+              @tc.id.fold(Html("")) { id =>
+                <a href="@routes.TransformationConfigurationsController.show(id)">@id @tc.name</a>
+              }
+            }
+          }
+        </td>
+        <td>
+        @if(entry.description.isDefined) {
+          @entry.description
+        } else {
+          <small>@Messages("ui.trigger.description.empty")</small>
+        }
+        </td>
+        <td>
+        @if(entry.active) {
+          <span class="text-success">@Messages("ui.activated")</span>
+        } else {
+          <span class="text-danger">@Messages("ui.deactivated")</span>
+        }
+        </td>
+      </tr>
+      }
+      </tbody>
+    </table>
+  } else {
+    <div class="panel panel-info panel-empty">
+      <div class="panel-heading">
+      @Messages("ui.empty.model", Messages("models.trigger"))
+      </div>
+      <div class="panel-body">
+        <a href="@routes.TriggerController.add()">@Messages("ui.empty.create")</a> @Messages("ui.empty.explain", Messages("models.trigger"))
+      </div>
+    </div>
+  }
+}

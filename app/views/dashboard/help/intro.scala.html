@@ -1,0 +1,111 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@()(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@base(Messages("help.intro.title")) {
+<div class="page-header">
+  <h1>@Messages("help.intro.heading") <small>@Messages("help.intro.heading.subtext")</small></h1>
+</div>
+<div class="container">
+  <div class="row">
+    <h2>@Messages("help.intro.concepts.heading")</h2>
+    <p>@Messages("help.intro.concepts.foreword")</p>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">
+            1. @Messages("help.intro.concepts.connectionInformation.heading")
+          </h3>
+        </div>
+        <div class="panel-body">
+          <p>@Messages("help.intro.concepts.connectionInformation.short")</p>
+          <p>@Messages("help.intro.concepts.connectionInformation.icon") <span class="glyphicon glyphicon-transfer" aria-hidden="true"></span></p>
+          <p><button class="btn btn-sm btn-info" data-toggle="collapse" data-target="#connectionInformationText">@Messages("help.intro.showMore")</button></p>
+          <div id="connectionInformationText" class="collapse">
+          @Html(Messages("help.intro.concepts.connectionInformation.long"))
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">
+            2. @Messages("help.intro.concepts.dfasdl.heading")
+            <small>@Messages("help.intro.concepts.dfasdl.heading.subtext")</small>
+          </h3>
+        </div>
+        <div class="panel-body">
+          <p>@Messages("help.intro.concepts.dfasdl.short")</p>
+          <p>@Messages("help.intro.concepts.dfasdl.icon") <span class="glyphicon glyphicon-education" aria-hidden="true"></span></p>
+          <p><button class="btn btn-sm btn-info" data-toggle="collapse" data-target="#dfasdlText">@Messages("help.intro.showMore")</button></p>
+          <div id="dfasdlText" class="collapse">
+            @Html(Messages("help.intro.concepts.dfasdl.long"))
+            <div class="alert alert-info">
+              <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+              <span class="sr-only">Please notice:</span>
+              @Html(Messages("help.intro.concepts.dfasdl.long.notice"))
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">
+            3. @Messages("help.intro.concepts.cookbook.heading")
+          </h3>
+        </div>
+        <div class="panel-body">
+          <p>@Messages("help.intro.concepts.cookbook.short")</p>
+          <p>@Messages("help.intro.concepts.cookbook.icon") <span class="glyphicon glyphicon-book" aria-hidden="true"></span></p>
+          <p><button class="btn btn-sm btn-info" data-toggle="collapse" data-target="#cookbookText">@Messages("help.intro.showMore")</button></p>
+          <div id="cookbookText" class="collapse">
+          @Html(Messages("help.intro.concepts.cookbook.long"))
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">
+            4. @Messages("help.intro.concepts.transformationConfiguration.heading")
+          </h3>
+        </div>
+        <div class="panel-body">
+          <p>@Messages("help.intro.concepts.transformationConfiguration.short")</p>
+          <p>@Messages("help.intro.concepts.transformationConfiguration.icon") <span class="glyphicon glyphicon-briefcase" aria-hidden="true"></span></p>
+          <p><button class="btn btn-sm btn-info" data-toggle="collapse" data-target="#transformationConfigurationText">@Messages("help.intro.showMore")</button></p>
+          <div id="transformationConfigurationText" class="collapse">
+          @Html(Messages("help.intro.concepts.transformationConfiguration.long"))
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <a href="@routes.DashboardController.index()" class="btn btn-lg btn-success" role="button" title="@Messages("help.intro.done.hint")">
+      @Messages("help.intro.done")
+      <span class="glyphicon glyphicon-check" aria-hidden="true"></span>
+    </a>
+  </div>
+</div>
+}
+

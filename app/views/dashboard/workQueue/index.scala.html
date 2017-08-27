@@ -1,0 +1,92 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(entries: Seq[WorkQueueEntry] = List())(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@myCss = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/tcqueue.css")">
+}
+
+@base(Messages("models.tcqueue"), customCss = myCss) {
+  <div class="clearfix pageTitle">
+    <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+    <span>@Messages("models.tcqueue")</span>
+  </div>
+
+  @if(entries.nonEmpty) {
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>@Messages("models.tcqueue.id")</th>
+          <th>@Messages("models.tcqueue.tkid")</th>
+          <th>@Messages("models.tcqueue.created")</th>
+          <th>@Messages("models.tcqueue.cron")</th>
+          <th>@Messages("models.tcqueue.trigger")</th>
+          <th>@Messages("models.tcqueue.user")</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      @for(entry <- entries) {
+        <tr>
+          <td>
+            @entry.uuid
+          </td>
+          <td>
+            <a href="@routes.TransformationConfigurationsController.show(entry.tkid)">@entry.tkid</a>
+          </td>
+          <td>
+            @entry.created
+          </td>
+          <td>
+            @if(entry.cron) {
+            <span class="glyphicon glyphicon-ok"></span>
+            } else {
+            <span class="glyphicon glyphicon-remove"></span>
+            }
+          </td>
+          <td>
+            @if(entry.trigger) {
+            <span class="glyphicon glyphicon-ok"></span>
+            } else {
+            <span class="glyphicon glyphicon-remove"></span>
+            }
+          </td>
+          <td>
+            @if(entry.user.isDefined) {
+            <span class="glyphicon glyphicon-ok"></span>
+            } else {
+            <span class="glyphicon glyphicon-remove"></span>
+            }
+          </td>
+          <td>
+            <a class="btn btn-danger" href="@routes.WorkQueueController.destroy(entry.uuid)">@Messages("ui.delete")</a>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  } else {
+    <div class="panel panel-info panel-empty">
+      <div class="panel-heading">
+      @Messages("ui.empty.model", Messages("models.tcqueue"))
+      </div>
+    </div>
+  }
+}

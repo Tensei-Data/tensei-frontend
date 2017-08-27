@@ -1,0 +1,839 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(id: Long)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+@import helper._
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("handlebars.min.js"))"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/ember-template-compiler.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/ember.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/ember-data.js")"></script>
+  <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("d3.min.js"))"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/editor.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/editor-controllers.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/editor-routes.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/editor-models.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/d3/mappings.js")"></script>
+  <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("jquery-ui.min.js"))"></script>
+
+  <script>
+    function sortIds(event) {
+      event.preventDefault();
+      $(this).sortable();
+      $(this).disableSelection();
+    }
+
+    function removeParentListEntry(node) {
+      if(node.parentNode.parentNode.parentNode) {
+        node.parentNode.parentNode.parentNode.removeChild(node.parentNode.parentNode)
+      }
+    }
+
+    function enableToolTips() {
+      $ (".availableMappings").tooltip();
+    }
+  </script>
+
+  <script type="text/javascript">
+    // Add the CSRF token from the hidden from field to all AJAX requests.
+    $.ajaxSetup({
+      headers: {
+        'Csrf-Token': $('input[name="csrfToken"]').val()
+      }
+    });
+  </script>
+}
+
+@myCss = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/editor.css")">
+  <link href="@routes.WebJarAssets.at(webJarAssets.locate("jquery-ui.min.css"))" rel="stylesheet"/>
+}
+
+@base(Messages("ui.mappingeditor.title"), customScripts = myScripts, customCss = myCss) {
+  <div id="loadingImage">&#160;</div>
+  @CSRF.formField
+
+  <script type="text/x-handlebars">
+    {{view Editor.RemoveLoadingImage}}
+    <div class="container-fluid" onload="">
+      {{outlet}}
+    </div>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="index">
+    <div class="jumbotron">
+      <h1>@Messages("ui.mappingeditor.wrong-place.title")</h1>
+      <p>@Messages("ui.mappingeditor.wrong-place.link-text")</p>
+      <p><a class="btn btn-primary btn-lg" href="@routes.CookbookResourcesController.edit(id).withFragment(s"/$id/mappings/")">@Messages("ui.mappingeditor.wrong-place.link-button")</a></p>
+    </div>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="cookbookresources">
+    @*<b>@Messages("models.cookbook")</b>*@
+    {{partial 'editortabs'}}
+    {{outlet}}
+  </script>
+
+  <!-- Templates for editing a cookbook resource {{ -->
+
+  <script type="text/x-handlebars" data-template-name="cookbookresources/resources">
+    <h3>@Messages("ui.editor.resources")</h3>
+
+    {{partial 'resources'}}
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="cookbookresources/settings">
+    <h3>@Messages("ui.editor.settings")</h3>
+
+    {{partial 'settings'}}
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="cookbookresources/mappings">
+    <div class="row">
+      <div id="editor-recipes" class="col-sm-5 col-md-3">
+        <ul class="nav nav-tabs  nav-justified" role="tablist" style="padding-top: 5px;">
+          <li class="active"><a href="#recipeTab" role="tab" data-toggle="tab">@Messages("models.cookbook.recipes")</a></li>
+          <li><a href="#elementsTab" role="tab" data-toggle="tab">@Messages("ui.editor.visibility")</a></li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Recipes -->
+          <div class="tab-pane active" id="recipeTab">
+            <div class="panel panel-default">
+              <div class="clearfix panel-heading">
+                <h4 class="pull-left">@Messages("models.cookbook.recipes")</h4><button {{action 'newRecipe'}} class="btn btn-success btn-sm pull-right glyphicon glyphicon-plus-sign"></button>
+                <div class="btn-group pull-right">
+                  <button type="button" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">
+                    @Messages("ui.editor.suggest") <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu" role="menu">
+                    <li><a>@Messages("ui.editor.suggest.current")</a></li>
+                    <li><a {{action 'getSimpleSuggest'}}>@Messages("ui.editor.suggest.simple")</a></li>
+                    <li><a {{action 'getSemanticSuggest'}}>@Messages("ui.editor.suggest.semantic")</a></li>
+                    <li><a {{action 'getAdvancedSemanticSuggest'}}>@Messages("ui.editor.suggest.advancedsemantic")</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div style="max-height: 186px; overflow: auto">
+                <ul class="list-group" style="margin-bottom: 1px;">
+                  {{#each recipes as |recipe|}}
+                    <li class="list-group-item" style="cursor: pointer;" {{action 'selectRecipe' recipe}}>
+                      <span class="badge">{{recipe.mappings.length}}</span>
+                      <div style="white-space: nowrap; overflow: hidden; text-overflow:ellipsis;">{{recipe.id}} ({{recipe.mode}})</div>
+                    </li>
+                  {{/each}}
+                </ul>
+              </div>
+            </div>
+            {{#if hasSelectedRecipe}}
+            <div style="text-align: center;"><span class="glyphicon glyphicon-circle-arrow-down" aria-hidden="true"></span></div>
+            <div class="panel panel-warning recipePanel" onmouseover="enableToolTips()">
+              <div class="panel-heading">
+                <div class="clearfix container-fluid">
+                  <div class="col-xs-12 col-sm-6">
+                    <b>@Messages("models.recipe.name")</b>
+                    {{input value=selectedRecipe.id class="form-control input-sm"}}
+                  </div>
+                  <div class="col-xs-12 col-sm-6">
+                    <b>@Messages("models.recipe.mode")</b>
+                    {{view "select" content=recipeModes selection=selectedRecipe.mode class="input-sm form-control recipeMode"}}
+                  </div>
+                </div>
+              </div>
+              <div class="panel-body">
+                {{#if selectedMapping}}
+                <ul class="nav nav-tabs" role="tablist" style="padding-top: 5px;">
+                  <li class="active"><a href="#mappings" role="tab" data-toggle="tab" class="glyphicon glyphicon-align-justify"></a></li>
+                  <li><a href="#transformations" role="tab" data-toggle="tab">T <span class="glyphicon glyphicon-cog"></span></a></li>
+                  <li><a href="#atomictransformations" role="tab" data-toggle="tab">A <span class="glyphicon glyphicon-cog"></span></a></li>
+                  <li><a href="#key" role="tab" data-toggle="tab">M <span class="glyphicon glyphicon-screenshot"></span></a></li>
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content" style="padding-top: 3px;">
+                  <!-- Mappings -->
+                  <div class="tab-pane active" id="mappings">
+                    <div style="max-height: 309px; overflow: auto">
+                      <div>
+                        <table class="table mappingsTable">
+                          <thead>
+                            <tr>
+                              <th>@Messages("ui.editor.source")</th>
+                              <th>@Messages("ui.editor.target")</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td class="column">
+                                <ul id="sortableSourceIds" class="sortableIds" onmouseover="sortIds.call(this, event)">
+                                  {{#each selectedMapping.sources as |sources|}}
+                                  <li class="item" data-id="{{unbound sources.elementId}}" data-dfasdl-id="{{unbound sources.dfasdlId}}"><div class="content"><span class="glyphicon glyphicon-remove" onclick="removeParentListEntry(this);" {{action 'deleteSourceKey' sources.elementId}}></span> {{transformMappingIDs sources selectedRecipe true}} &lArr;</div></li>
+                                  {{/each}}
+                                </ul>
+                              </td>
+                              <td class="column">
+                                <ul id="sortableTargetIds" class="targetList sortableIds" onmouseover="sortIds.call(this, event)">
+                                  {{#each selectedMapping.targets as |targets|}}
+                                  <li class="item" data-id="{{unbound targets.elementId}}" data-dfasdl-id="{{unbound targets.dfasdlId}}"><div class="content">&rArr; {{unbound (transformMappingIDs targets selectedRecipe false)}} <span class="glyphicon glyphicon-remove" onclick="removeParentListEntry(this);" {{action 'deleteTargetKey' targets.elementId}}></span></div></li>
+                                  {{/each}}
+                                </ul>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Transformations -->
+                  <div class="tab-pane" id="transformations">
+                    {{#if hasSelectedTransformation}}
+                      @Messages("ui.new.model", Messages("ui.editor.transformation"))
+                      <div class="clearfix">
+                        <div class="pull-left">
+                          <div><b>@Messages("ui.editor.transformer")</b></div>
+                          {{view "select" content=availableTransformations selection=selectedTransformer id="selectTransformation" value=selectedTransformation.transformerClassName class="input-sm form-control"}}
+                        </div>
+                      </div>
+                      {{#if selectedTransformer}}
+                        {{#if isSelectedTransformer}}
+                          {{#if selectedTransformerOptions}}
+                          <div style="max-height: 190px; overflow: auto">
+                            <b>@Messages("ui.editor.options")</b>
+                            {{#if selectedTransformerIs.CastStringToLong }}
+                              {{partial 'transformer-settings-caststringtolong'}}
+                            {{else if selectedTransformerIs.Concat }}
+                              {{partial 'transformer-settings-concat'}}
+                            {{else if selectedTransformerIs.DateConverter}}
+                              {{partial 'transformer-settings-date-converter'}}
+                            {{else if selectedTransformerIs.DateTypeConverter}}
+                              {{partial 'transformer-settings-date-type-converter'}}
+                            {{else if selectedTransformerIs.DateValueToString}}
+                              {{partial 'transformer-settings-date-value-to-string'}}
+                            {{else if selectedTransformerIs.DrupalVanCodeTransformer}}
+                              {{partial 'transformer-settings-drupal-van-code-transformer'}}
+                            {{else if selectedTransformerIs.EmptyString}}
+                              {{partial 'transformer-settings-empty-string'}}
+                            {{else if selectedTransformerIs.ExtractBiggestValue}}
+                              {{partial 'transformer-settings-extract-biggest-value'}}
+                            {{else if selectedTransformerIs.IDTransformer}}
+                              {{partial 'transformer-settings-id-transformer'}}
+                            {{else if selectedTransformerIs.IfThenElseNumeric}}
+                              {{partial 'transformer-settings-if-then-else-numeric'}}
+                            {{else if selectedTransformerIs.LowerOrUpper}}
+                              {{partial 'transformer-settings-lower-or-upper'}}
+                            {{else if selectedTransformerIs.MergeAndExtractByRegEx}}
+                              {{partial 'transformer-settings-merge-and-extract-by-regex'}}
+                            {{else if selectedTransformerIs.Nullify}}
+                              {{partial 'transformer-settings-nullify'}}
+                            {{else if selectedTransformerIs.Overwrite}}
+                              {{partial 'transformer-settings-overwrite'}}
+                            {{else if selectedTransformerIs.Replace}}
+                              {{partial 'transformer-settings-replace'}}
+                            {{else if selectedTransformerIs.Split}}
+                              {{partial 'transformer-settings-split'}}
+                            {{else if selectedTransformerIs.TimestampCalibrate}}
+                              {{partial 'transformer-settings-timestamp-calibrate'}}
+                            {{else}}
+                              <p class="alert alert-danger">@Messages("ui.editor.transformer.missingSettingsForm")</p>
+                            {{/if}}
+                          </div>
+                          {{/if}}
+                        {{/if}}
+                      {{/if}}
+                      <div style="margin-top: 10px; padding-top: 5px; border-top: 1px dotted #ccc;">
+                        <button {{action 'addTransformation' selectedRecipe selectedMapping}} class="btn btn-default btn-xs">@Messages("ui.save")</button>
+                        <button {{action 'cancelTransformation'}} class="btn btn-default btn-xs">@Messages("ui.cancel")</button>
+                      </div>
+                    {{else}}
+                      <button {{action 'newTransformation' selectedMapping}} class="btn btn-success btn-xs">@Messages("models.mappingtransformation.transformations") <span class="glyphicon glyphicon-plus-sign"></span></button>
+                      {{#if selectedMapping.transformations}}
+                      <table class="table" style="font-size: 10px;">
+                        <thead>
+                          <tr>
+                            <th>@Messages("ui.editor.transformer")</th>
+                            <th>@Messages("ui.editor.options")</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody id="sortableTransformations" onmouseover="sortIds.call(this, event)">
+                          {{#each selectedMapping.transformations as |transformation index|}}
+                          <tr class="item" data-id="{{unbound index}}">
+                            <td>
+                              {{trimClassNames transformation.transformerClassName}}
+                            </td>
+                            <td>
+                              {{#each transformation.options.params as |params|}}
+                                <div>{{params.[0]}} : {{displayEmptyString params.[1]}}</div>
+                              {{else}}
+                              <div>&empty;</div>
+                              {{/each}}
+                            </td>
+                            <td>
+                              <button {{action 'deleteTransformation' transformation}} class="btn btn-default btn-xs glyphicon glyphicon-remove"></button>
+                            </td>
+                          </tr>
+                          {{/each}}
+                        </tbody>
+                      </table>
+                      {{else}}
+                      <p class="alert alert-warning">@Messages("ui.empty.model", Messages("ui.editor.transformation"))</p>
+                      {{/if}}
+                    {{/if}}
+                  </div>
+
+                    <!-- Atomic Transformations -->
+                  <div class="tab-pane" id="atomictransformations">
+                    <div>
+                      <button {{action 'newAtomicTransformation' selectedMapping}} class="btn btn-success btn-xs">@Messages("models.mappingtransformation.atomicTransformations") <span class="glyphicon glyphicon-plus-sign"></span></button>
+                    </div>
+                    {{#if hasSelectedAtomicTransformation}}
+                      <div class="form-inline">
+                        <div class="clearfix atomicTransfomerSelectBoxes">
+                          <div class="pull-left">
+                          <div><b>@Messages("ui.editor.element")</b></div>
+                          {{view "select" content=availableSourceIds optionLabelPath="content.title" value=selectedAtomicTransformation.element class="input-sm form-control"}}
+                          </div>
+                          <div class="pull-right">
+                            <div><b>@Messages("ui.editor.transformer")</b></div>
+                            {{view "select" content=availableAtomicTransformations selection=selectedAtomicTransformer value=selectedAtomicTransformation.transformerClassName class="input-sm form-control"}}
+                          </div>
+                        </div>
+                        {{#if selectedAtomicTransformer}}
+                          {{#if isSelectedAtomicTransformer}}
+                            {{#if selectedAtomicTransformerOptions}}
+                            <div style="max-height: 190px; overflow: auto">
+                              <b>@Messages("ui.editor.options")</b>
+                              {{#if selectedAtomicTransformerIs.BoxDataIntoList }}
+                                {{partial 'atomic-transformer-settings-box-data-into-list'}}
+                              {{else if selectedAtomicTransformerIs.Replace}}
+                                {{partial 'atomic-transformer-settings-replace'}}
+                              {{else if selectedAtomicTransformerIs.TimestampAdjuster }}
+                                {{partial 'atomic-transformer-settings-timestamp-adjuster'}}
+                              {{else}}
+                                <p class="alert alert-danger">@Messages("ui.editor.atomicTransformer.missingSettingsForm")</p>
+                              {{/if}}
+                            </div>
+                            {{/if}}
+                          {{/if}}
+                        {{/if}}
+                        <div style="margin-top: 10px; padding-top: 5px; border-top: 1px dotted #ccc;">
+                          <button {{action 'addAtomicTransformation' selectedRecipe selectedMapping}} class="btn btn-default btn-xs">@Messages("ui.save")</button>
+                          <button {{action 'cancelAtomicTransformation'}} class="btn btn-default btn-xs">@Messages("ui.cancel")</button>
+                        </div>
+                      </div>
+                    {{else}}
+                      {{#if selectedMapping.atomicTransformations}}
+                      <table class="table" style="font-size: 10px;">
+                        <thead>
+                          <tr>
+                            <th>@Messages("ui.editor.element")</th>
+                            <th>@Messages("ui.editor.transformer")</th>
+                            <th>@Messages("ui.editor.options")</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody id="sortableAtomicTransformations" onmouseover="sortIds.call(this, event)">
+                          {{#each selectedMapping.atomicTransformations as |atomicTransformation index|}}
+                          <tr class="item" data-id="{{unbound index}}">
+                            <td>
+                              {{atomicTransformation.element.elementId}}
+                            </td>
+                            <td>
+                              {{trimClassNames atomicTransformation.transformerClassName}}
+                            </td>
+                            <td>
+                              {{#each atomicTransformation.options.params as |params|}}
+                              {{#if params.[1]}}
+                              <div>{{params.[0]}} : {{displayEmptyString params.[1]}}</div>
+                              {{/if}}
+                              {{else}}
+                              <div>&empty;</div>
+                              {{/each}}
+                            </td>
+                            <td>
+                              <button {{action 'deleteAtomicTransformation' atomicTransformation}} class="btn btn-default btn-xs glyphicon glyphicon-remove"></button>
+                            </td>
+                          </tr>
+                          {{/each}}
+                        </tbody>
+                      </table>
+                      {{else}}
+                      <p class="alert alert-warning">@Messages("ui.empty.model", Messages("ui.editor.transformation"))</p>
+                      {{/if}}
+                    {{/if}}
+                  </div>
+
+                  <!-- Mapping Key -->
+                  <div class="tab-pane" id="key">
+                    @Messages("ui.editor.chooseMappingKey")
+                    {{view "select" content=availableMappingKeys selection=selectedMapping.mappingKey.name class="input-sm form-control"}}
+                  </div>
+                  <div style="border-top: 1px solid #ccc; padding-top: 5px; margin-top: 10px; text-align: right;">
+                    <button class="btn btn-success btn-sm" {{action 'saveMapping' selectedRecipe selectedMapping}}>@Messages("ui.save")</button>
+                    <button class="btn btn-danger btn-sm" {{action 'deleteMapping' selectedRecipe selectedMapping}}>@Messages("ui.delete")</button>
+                    <button class="btn btn-default btn-sm" {{action 'cancelMapping'}}>@Messages("ui.cancel")</button>
+                  </div>
+                </div>
+                <!-- Show the available mappings -->
+                {{else}}
+                  <div style="padding: 5px 0;">
+                    <!-- Cretae a new mapping -->
+                    <button class="btn btn-success btn-xs" {{action 'newMapping'}}>@Messages("ui.editor.mappings") <span class="glyphicon glyphicon-plus-sign"></span></button><button class="btn btn-default btn-xs pull-right" {{action 'cancelRecipe' selectedRecipe}}>@Messages("ui.cancel")</button><button style="margin-right: 3px;" class="btn btn-danger btn-xs pull-right" {{action 'deleteRecipe' selectedRecipe}}>@Messages("ui.delete")</button>
+                  </div>
+                  <div style="max-height: 309px; overflow: auto">
+                    <ul class="list-group" style="margin-bottom: 1px;">
+                      {{#each selectedRecipe.mappings as |mapping|}}
+                        <li class="list-group-item availableMappings" style="cursor: pointer;"  {{action 'selectMapping' mapping}}>
+                          <div class="clearfix">
+                            <div class="pull-left">
+                              {{mapping.sources.length}} <span class="glyphicon glyphicon-arrow-right"></span> {{mapping.targets.length}} <span data-toggle="tooltip" data-placement="top" title="{{unbound (transformMappingIDs mapping.sources selectedRecipe true)}} &rarr; {{unbound (transformMappingIDs mapping.targets selectedRecipe false)}}" class="glyphicon glyphicon-list"></span> <small>{{displayMappingIDsIfPossible mapping.sources mapping.targets selectedRecipe}}</small>
+                            </div>
+                            <div class="pull-right" style="font-size: 10px;">
+                              {{#if mapping.transformations}}
+                              T <span class="glyphicon glyphicon-cog" title="{{unbound (displayTransformationNames mapping.transformations)}}"></span>
+                              {{/if}}
+                              {{#if mapping.atomicTransformations}}
+                              A <span class="glyphicon glyphicon-cog"></span>
+                              {{/if}}
+                              {{#if mapping.mappingKey.name}}
+                              M <span class="glyphicon glyphicon-screenshot"></span>
+                              {{/if}}
+                            </div>
+                          </div>
+                        </li>
+                      {{/each}}
+                    </ul>
+                  </div>
+                {{/if}}
+              </div>
+            </div>
+            {{/if}}
+            <div class="saveRecipeButtons">
+              <button class="btn btn-primary" {{action 'saveMappings'}}>@Messages("ui.save")</button>
+              {{#if hasBeenSaved}}<span class="alert alert-success">@Messages("ui.editor.changes.saved")</span>{{/if}}
+              {{#if mustBeSaved}}<span class="alert alert-warning">@Messages("ui.editor.changes")</span>{{/if}}
+              {{#if mappingsSaving}}<img src="/assets/img/ajax-loader-small.gif" style="margin-left: 5px;" />{{/if}}
+              {{#if saveFailure}}<span class="alert alert-danger"><span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span> @Messages("ui.editor.changes.save.error")</span>{{/if}}
+            </div>
+          </div>
+          <!-- Administer the visibility of the source and target elements -->
+          <div class="tab-pane clearfix" id="elementsTab">
+            <div class="clearfix">
+              <div id="sourceElementsForDisplay" class="col-xs-12 col-sm-6">
+                <h5>@Messages("ui.editor.visibility.sources")</h5>
+                <div class="generalButtons">
+                  <button class="btn btn-default btn-xs" {{action 'selectAllSourceElementsForDisplay'}}>@Messages("ui.editor.visibility.buttons.selectall")</button>
+                  <button class="btn btn-default btn-xs" {{action 'deselectAllSourceElementsForDisplay'}}>@Messages("ui.editor.visibility.buttons.selectnone")</button>
+                  <button class="btn btn-default btn-xs" {{action 'selectOnlyMappedElementsForDisplay'}}>@Messages("ui.editor.visibility.buttons.mapped")</button>
+                </div>
+                <div class="elements">
+                  <select id="sourceIDElementsForDisplay" multiple size="33"  {{action 'clickedSourceElementsForDisplay' this on="change" bubbles=false}}>
+                  {{#each availableSourceElementsForDisplay as |sourceElement|}}
+                    {{#if selected}}
+                    <option selected title="{{unbound sourceElement.dfasdlId}}">{{sourceElement.name}}</option>
+                    {{else}}
+                    <option title="{{unbound sourceElement.dfasdlId}}">{{sourceElement.name}}</option>
+                    {{/if}}
+                  {{/each}}
+                  </select>
+                </div>
+              </div>
+              <div id="targetElementsForDisplay" class="col-xs-12 col-sm-6">
+                <h5>@Messages("ui.editor.visibility.targets")</h5>
+                <div class="generalButtons">
+                  <button class="btn btn-default btn-xs" {{action 'selectAllTargetElementsForDisplay'}}>@Messages("ui.editor.visibility.buttons.selectall")</button>
+                  <button class="btn btn-default btn-xs" {{action 'deselectAllTargetElementsForDisplay'}}>@Messages("ui.editor.visibility.buttons.selectnone")</button>
+                </div>
+                <div class="elements">
+                  <select id="targetIDElementsForDisplay" multiple size="33"  {{action 'clickedTargetElementsForDisplay' this on="change" bubbles=false}}>
+                  {{#each availableTargetElementsForDisplay as |targetElement|}}
+                    {{#if selected}}
+                    <option selected title="{{unbound targetElement.dfasdlId}}">{{targetElement.name}}</option>
+                    {{else}}
+                    <option title="{{unbound targetElement.dfasdlId}}">{{targetElement.name}}</option>
+                    {{/if}}
+                  {{/each}}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div>
+              <small>@Html(Messages("ui.editor.visibility.keys"))</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="editor-pane" class="col-sm-7 col-md-9"></div>
+    </div>
+  </script>
+
+  <!-- }} Templates for editing a cookbook resource -->
+
+  <!-- Partials -->
+
+  <script type="text/x-handlebars" data-template-name="_editortabs">
+    <nav role="navigation">
+      <ul class="nav nav-tabs" role="tablist">
+        {{#link-to 'cookbookresources.resources' tagName='li'}}<a>@Messages("ui.editor.resources")</a>{{/link-to}}
+        {{#link-to 'cookbookresources.settings' tagName='li'}}<a>@Messages("ui.editor.settings")</a>{{/link-to}}
+        {{#link-to 'cookbookresources.mappings' tagName='li'}}<a>@Messages("ui.editor.mappings")</a>{{/link-to}}
+      </ul>
+    </nav>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_resources">
+    <div class="row editor-resources">
+      <div class="col-sm-10 col-md-8 col-lg-6">
+        <h4>@Messages("models.cookbook.id"):</h4>
+        {{input value=name class="form-control" autofocus="true" maxlength="128"}}
+        {{#if nameError}}
+          <ul class="text-danger">
+            <li>@Messages("errors.element.name", Messages("models.cookbook.id"), Messages("errors.allowed.characters"))</li>
+          </ul>
+        {{/if}}
+        {{#if duplicateError}}
+          <ul class="text-danger">
+            <li>@Messages("errors.cookbook.duplicate")</li>
+          </ul>
+        {{/if}}
+
+        <h4>@Messages("ui.editor.select.sources"):</h4>
+        {{view "select" class="form-control" content=controller.model.dfasdlresources multiple=true optionLabelPath="content.dfasdl.id" optionValuePath="content.id" selection=selectedSources size="10"}}
+
+        <h4>@Messages("ui.editor.select.target"):</h4>
+        {{view "select" class="form-control" content=controller.model.dfasdlresources optionLabelPath="content.dfasdl.id" optionValuePath="content.id" prompt="@Messages("ui.cookbook.dfasdls.target.empty")" selection=selectedTarget}}
+
+        <p></p>
+        <div class="saveResourcesButton">
+          <button class="btn btn-primary" {{action 'saveResources'}}>@Messages("ui.save")</button>
+          {{#if resourceSaving}}
+          <img src="/assets/img/ajax-loader-small.gif" />
+          {{/if}}
+          {{#if resourcesSaved}}
+          <span class="alert alert-success">@Messages("ui.editor.changes.saved")</span>
+          {{/if}}
+        </div>
+
+      </div>
+    </div>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_settings">
+    <div class="row editor-settings">
+      <div class="col-sm-10 col-md-8 col-lg-6">
+        <table class="table versionTable">
+          <thead>
+            <tr>
+              <th class="dfasdl">@Messages("ui.editor.sources")</th>
+              <th class="version">@Messages("models.dfasdlresource.dfasdl.version")</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each sourcesVersions as |sourceVersion|}}
+            <tr>
+              <td>{{sourceVersion.id}}</td>
+              <td>{{view "select" content=sourceVersion.versions value=sourceVersion.selected class="form-control" }}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+
+        <hr/>
+
+        <table class="table versionTable">
+          <thead>
+            <tr>
+              <th class="dfasdl">@Messages("ui.editor.target")</th>
+              <th class="version">@Messages("models.dfasdlresource.dfasdl.version")</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{targetVersions.id}}</td>
+              <td>{{view "select" content=targetVersions.versions value=targetVersions.selected class="form-control" }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p></p>
+        <div class="saveSettingsButton">
+          <button class="btn btn-primary" {{action 'saveSettings'}}>@Messages("ui.save")</button>
+          {{#if settingsSaving}}
+          <img src="/assets/img/ajax-loader-small.gif" />
+          {{/if}}
+          {{#if settingsSaved}}
+          <span class="alert alert-success">@Messages("ui.editor.changes.saved")</span>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_atomic-transformer-settings-box-data-into-list">
+    <p class="alert alert-info">@Messages("ui.editor.atomicTransformer.noSettingsAvailable")</p>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_atomic-transformer-settings-replace">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.atomicTransformer.replace.search")</td>
+          <td>{{input class="form-control input-sm" value=selectedAtomicTransformerOptions.search.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.atomicTransformer.replace.replace")</td>
+          <td>{{input class="form-control input-sm" value=selectedAtomicTransformerOptions.replace.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.atomicTransformer.replace.count")</td>
+          <td>{{input class="form-control input-sm" value=selectedAtomicTransformerOptions.count.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_atomic-transformer-settings-timestamp-adjuster">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.atomicTransformer.timestampAdjuster.perform")</td>
+          <td>{{view "select" content=selectedAtomicTransformerOptions.perform.options selection=selectedAtomicTransformerOptions.perform.value class="input-sm form-control"}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-concat">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.concat.separator")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.separator.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.concat.prefix")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.prefix.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.concat.suffix")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.suffix.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-date-converter">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.dateConverter.format")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.format.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.dateConverter.timezone")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.timezone.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-date-type-converter">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.dateTypeConverter.target")</td>
+          <td>{{view "select" class="form-control input-sm" content=selectedTransformerOptions.target.options selection=selectedTransformerOptions.target.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-date-value-to-string">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.dateValueToString.format")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.format.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-drupal-van-code-transformer">
+    <p class="alert alert-info">@Messages("ui.editor.transformer.noSettingsAvailable")</p>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-caststringtolong">
+    <p class="alert alert-info">@Messages("ui.editor.transformer.noSettingsAvailable")</p>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-empty-string">
+    <p class="alert alert-info">@Messages("ui.editor.transformer.noSettingsAvailable")</p>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-extract-biggest-value">
+    <p class="alert alert-info">@Messages("ui.editor.transformer.noSettingsAvailable")</p>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-id-transformer">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.idTransformer.field")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.field.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.idTransformer.start")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.start.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.idTransformer.type")</td>
+          <td>{{view "select" class="form-control input-sm" content=selectedTransformerOptions.type.options selection=selectedTransformerOptions.type.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-if-then-else-numeric">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.ifThenElseNumeric.if")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.if.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.ifThenElseNumeric.then")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.then.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.ifThenElseNumeric.else")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.else.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.ifThenElseNumeric.format")</td>
+          <td>{{view "select" class="form-control input-sm" content=selectedTransformerOptions.format.options selection=selectedTransformerOptions.format.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-lower-or-upper">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.lowerOrUpper.locale") <span class="glyphicon glyphicon-question-sign" aria-hidden="true" style="cursor: help;" title="@Messages("ui.mappings.transformer.lowerOrUpper.locale.hint")"></span></td>
+          <td>{{view "select" class="form-control input-sm" content=selectedTransformerOptions.locale.options selection=selectedTransformerOptions.locale.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.lowerOrUpper.perform")</td>
+          <td>{{view "select" class="form-control input-sm" content=selectedTransformerOptions.perform.options selection=selectedTransformerOptions.perform.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-merge-and-extract-by-regex">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.mergeAndExtractByRegex.regexp")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.regexp.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.mergeAndExtractByRegex.filler")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.filler.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.mergeAndExtractByRegex.groups")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.groups.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-nullify">
+    <p class="alert alert-info">@Messages("ui.editor.transformer.noSettingsAvailable")</p>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-overwrite">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.overwrite.value")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.value.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.overwrite.type")</td>
+          <td>{{view "select" class="form-control input-sm" content=selectedTransformerOptions.type.options selection=selectedTransformerOptions.type.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-replace">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.replace.search")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.search.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.replace.replace")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.replace.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.replace.count")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.count.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-split">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.split.pattern")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.pattern.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.split.selected")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.selected.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.split.limit")</td>
+          <td>{{input class="form-control input-sm" value=selectedTransformerOptions.limit.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-timestamp-calibrate">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.timestampCalibrate.perform")</td>
+          <td>{{view "select" class="form-control input-sm" content=selectedTransformerOptions.perform.options selection=selectedTransformerOptions.perform.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+}

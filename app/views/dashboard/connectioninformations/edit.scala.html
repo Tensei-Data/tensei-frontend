@@ -1,0 +1,41 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@import java.util.Locale
+@(id: Long, form: Form[forms.ConnectionInformationResourceForm.Data], languageTags: Array[Locale], groups: Seq[models.Group], userNames: Seq[UserNameInfo])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+@import dashboard.connectioninformations.displayForm
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("jquery-ui.min.js"))"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/connectioninformations-form.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/togglePrivilegeSettings.js")"></script>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      ConInfoFormHelpers.selectedDfasdlId = '@form("connectionInformation.dfasdlRef.dfasdlId").value.getOrElse("")'
+    })
+  </script>
+}
+
+@myCss = {
+  <link href="@routes.WebJarAssets.at(webJarAssets.locate("jquery-ui.min.css"))" rel="stylesheet"/>
+}
+
+@base(Messages("ui.edit.model", Messages("models.connectionInformation")), customCss = myCss, customScripts = myScripts) {
+  @displayForm(form, languageTags, groups, userNames, routes.ConnectionInformationsController.update(id))
+}

@@ -1,0 +1,44 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@()(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@base(Messages("models.cookbook")) {
+  @helper.form(action = routes.CookbookResourcesController.processImportCookbook(), 'enctype -> "multipart/form-data") {
+    @helper.CSRF.formField
+
+    <div class="panel panel-default">
+      <div class="panel-heading">@Messages("ui.import.header")</div>
+      <div class="panel-body">
+        <div class="form-group">
+          <label for="cookbookFile">@Messages("ui.import.file")</label>
+          <input type="file" name="cookbookFile" id="cookbookFile">
+          <p class="help-block">@Messages("ui.import.file.help")</p>
+        </div>
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" id="forceImport" name="forceImport"> @Messages("ui.import.file.force")
+          </label>
+          <p class="help-block">@Messages("ui.import.file.force.help")</p>
+        </div>
+      </div>
+      <div class="panel-footer"><button type="submit" class="btn btn-default">@Messages("ui.import.button")</button></div>
+    </div>
+  }
+}

@@ -1,0 +1,391 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@import com.wegtam.tensei.adt.AgentInformation
+@(username: String = "", ts: Seq[TransformationConfiguration], agents: Map[String, AgentInformation], connections: Seq[ConnectionInformationResource], cronjobs: Seq[Cron], triggers: Seq[Trigger], workQueue: Seq[WorkQueueEntry], stats: WorkHistoryStatistics)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+@import helpers.dashboard.connectionInformationIcon
+@import helpers.dashboard.connectionInformationLink
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/dashboardWebsocket.js")"></script>
+  <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("d3.min.js"))"></script>
+  <script type="text/javascript" src="@routes.WebJarAssets.at(webJarAssets.locate("nv.d3.min.js"))"></script>
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/d3-charts.js")"></script>
+  <script>
+    @if(stats.startedBy.nonEmpty) {
+      var byTypeObjects = [];
+      @for(entry <- stats.startedBy) {
+        byTypeObjects.push({
+          label : "@entry.label",
+          value : "@entry.value"
+        });
+      }
+      nvPieChart("chartTCType", byTypeObjects, 300, 300);
+    }
+
+    @if(stats.exitStatus.nonEmpty) {
+      var byStatusObjects = [];
+      @for(entry <- stats.exitStatus) {
+        byStatusObjects.push({
+          label : "@entry.label",
+          value : "@entry.value"
+        });
+      }
+      nvPieChart("chartTCStatus", byStatusObjects, 300, 300);
+    }
+
+    @if(stats.runningTime.nonEmpty) {
+      var byTimeObjects = [];
+      @for(entry <- stats.runningTime) {
+        byTimeObjects.push({
+          label : "@entry.label",
+          value : "@entry.value"
+        });
+      }
+      nvPieChart("chartTCTime", byTimeObjects, 300, 300);
+    }
+  </script>
+  <script type="text/javascript">
+    $ (".tooltipContainer").tooltip({placement: 'top', template: '<div class="tooltip myTooltip" role="tooltip"><div class="tooltip-arrow myTooltipArrow"></div><div class="tooltip-inner myTooltipInner"></div></div>'});
+  </script>
+  <script type="text/javascript">
+    DashboardWebsocket.connect()
+  </script>
+}
+
+@myCSS = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/index.css")">
+  <link href="@routes.WebJarAssets.at(webJarAssets.locate("nv.d3.min.css"))" rel="stylesheet"/>
+}
+
+@base(Messages("ui.dashboard.title"), customScripts = myScripts, customCss = myCSS, username = username) {
+  <div class="container-fluid" id="dashboard">
+    <div class="row">
+
+      <div role="tabpanel">
+        <div id="dashboardTopNav">
+          <ul class="nav" role="tablist">
+            <li role="presentation" class="active">
+              <a href="#home" aria-controls="home" role="tab" data-toggle="tab">
+                <span class="glyphicon glyphicon-dashboard" aria-hidden="true"></span>
+                @Messages("ui.dashboard.topnav.home")
+              </a>
+            </li>
+            <li role="presentation">
+              <a href="#services" aria-controls="services" role="tab" data-toggle="tab">
+                <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+                @Messages("ui.dashboard.topnav.services")
+              </a>
+            </li>
+            <li role="presentation">
+              <a href="#statistics" aria-controls="statistics" role="tab" data-toggle="tab">
+                <span class="glyphicon glyphicon-signal" aria-hidden="true"></span>
+                @Messages("ui.dashboard.topnav.statistics")
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="tab-content">
+          <div role="tabpanel" class="tab-pane active" id="home">
+            <div class="panel-group clearfix">
+                <!-- Transformation Configurations -->
+              <div id="panel-transformations" class="panel panel-default">
+                <div class="panel-heading">
+                  <div class="panel-title">
+                    <a data-toggle="collapse" data-parent="#accordion" href="#collapseTransformations">
+                      <span class="caret"></span> <span class="glyphicon glyphicon-briefcase" aria-hidden="true"></span> @Messages("models.transformationconfiguration")
+                    </a>
+                  </div>
+                </div>
+                <div id="collapseTransformations" class="panel-collapse collapse in">
+                  <div class="panel-body">
+                  @if(ts.nonEmpty) {
+                    @for(entry <- ts) {
+                      @entry.id.fold(Html("")) { id =>
+                        <div class="tkEntry clearfix">
+                          <div class="tkGeneral rows clearfix">
+                            <div class="tkButtons col-xs-1">
+                              @if(entry.dirty) {
+                                <a id="button-start-transformation-@id" href="@routes.TransformationConfigurationsController.show(id)" class="btn btn-default btn-xs text-danger" title="@Messages("models.transformationconfiguration.dirty")">
+                                  <span class="glyphicon glyphicon-alert text-danger" aria-hidden="true"></span>
+                                </a>
+                              } else {
+                                <a id="button-start-transformation-@id" class="btn btn-default btn-xs text-success" onclick="startTransformation(@id);">
+                                  <span class="glyphicon glyphicon-play text-success"></span>
+                                </a>
+                              }
+                            </div>
+                            <div class="tkType col-xs-1">
+                              <span class="migrationSystems">
+                                @for(c <- entry.sourceConnections) {
+                                  @defining(connections.find(_.id.contains(c.connectionInformationId))) { co =>
+                                    @co.fold(Html(""))(c => connectionInformationIcon(c))
+                                  }
+                                }
+                                <span class="glyphicon glyphicon-arrow-right"></span>
+                                @defining(connections.find(_.id.contains(entry.targetConnection.connectionInformationId))) { co =>
+                                  @co.fold(Html(""))(c => connectionInformationIcon(c))
+                                }
+                              </span>
+                            </div>
+                            <div class="tkName col-xs-3 col-md-3">
+                              <a href="@routes.TransformationConfigurationsController.show(id)">@entry.id @entry.name</a>
+                            </div>
+                            <div class="tkStatus col-xs-6 col-md-6">
+                              @*<b>@Messages("ui.dashboard.tkstatus")</b>*@
+                              <div class="status-progress" id="status-progress-@id"></div>
+                            </div>
+                            <div class="tkOpener col-xs-1">
+                              <span class="pull-right glyphicon glyphicon-collapse-down text-muted" style="cursor: pointer;" data-toggle="collapse" data-target="#tkInfo-@id"></span>
+                            </div>
+                          </div>
+                          <div class="tkInfo rows clearfix collapse" id="tkInfo-@id">
+                              <!-- sources / target -->
+                            <div class="col-xs-12 col-sm-6 clearfix">
+                              <div class="header">@Messages("models.transformationconfiguration.sources") (<span class="glyphicon glyphicon-arrow-left btn-xs"></span>) / @Messages("models.transformationconfiguration.target") (<span class="glyphicon glyphicon-arrow-right btn-xs"></span>)</div>
+                              <div class="sources clearfix">
+                                <div class="pull-left">
+                                  <span class="glyphicon glyphicon-arrow-left"></span>
+                                </div>
+                                <div class="pull-left uri">
+                                @for(c <- entry.sourceConnections) {
+                                  @defining(connections.find(_.id.contains(c.connectionInformationId))) { co =>
+                                    @connectionInformationLink(c.connectionInformationId, co)<br/>
+                                  }
+                                }
+                                </div>
+                              </div>
+                              <div class="target clearfix">
+                                <div class="pull-left">
+                                  <span class="glyphicon glyphicon-arrow-right"></span>
+                                </div>
+                                <div class="pull-left uri">
+                                  @defining(connections.find(_.id.contains(entry.targetConnection.connectionInformationId))) { co =>
+                                    @connectionInformationLink(entry.targetConnection.connectionInformationId, co)<br/>
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                              <!-- cookbook -->
+                            <div class="col-xs-12 col-sm-6 clearfix">
+                              <div class="header">@Messages("models.cookbook")</div>
+                              <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+                              @entry.cookbook.id.fold(Html("")) { cid =>
+                                <a class="name" href="@routes.CookbookResourcesController.show(cid)">@entry.cookbook.cookbook.id</a>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    }
+                  } else {
+                    <div class="panel panel-info panel-empty">
+                      <div class="panel-heading">
+                      @Messages("ui.empty.model", Messages("models.transformationconfiguration"))
+                      </div>
+                      <div class="panel-body">
+                        <a href="@routes.TransformationConfigurationsController.add()">@Messages("ui.empty.create")</a> @Messages("ui.empty.explain", Messages("models.transformationconfiguration"))
+                      </div>
+                    </div>
+                  }
+                  <div id="tcqueue" class="clearfix">
+                    @Messages("ui.dashboard.tcqueue") (<a href="@routes.WorkQueueController.index()">@Messages("ui.dashboard.tcqueue.counter") <span id="tcQueueCounter">@workQueue.size</span></a>)
+                    <div id="tcQueueContainer" class="clearfix"></div>
+                  </div>
+                  </div>
+                </div>
+              </div>
+
+                <!-- Agents -->
+              <div id="panel-agents" class="panel panel-default">
+                <div class="panel-heading">
+                  <div class="panel-title">
+                    <a data-toggle="collapse" data-parent="#accordion" href="#collapseAgents">
+                      <span class="caret"></span> <span class="glyphicon glyphicon-cloud" aria-hidden="true"></span> @Messages("ui.mainnavbar.agents")
+                    </a>
+                  </div>
+                </div>
+                <div id="collapseAgents" class="panel-collapse collapse in">
+                  <div class="panel-body" id="agentContainer">
+                    <span class="text-danger">@Messages("ui.dashboard.agent.nostarted")</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div role="tabpanel" class="tab-pane" id="services">
+            <div class="panel-group clearfix">
+              <!-- Cronjobs -->
+              <div id="panel-cronjobs" class="panel panel-default">
+                <div class="panel-heading">
+                  <div class="panel-title">
+                    <a data-toggle="collapse" data-parent="#accordion" href="#collapseCrons">
+                      <span class="caret"></span> <span class="glyphicon glyphicon-time" aria-hidden="true"></span> @Messages("ui.mainnavbar.crons")
+                    </a>
+                  </div>
+                </div>
+                <div id="collapseCrons" class="panel-collapse collapse in">
+                  <div class="panel-body">
+
+                  @for(cron <- cronjobs) {
+                    @cron.id.fold(Html("")) { id =>
+                      <div class="cronjobEntry clearfix">
+                        <div class="cronjobGeneral rows clearfix">
+                          <div class="cronjobName col-xs-2">
+                            <a href="@routes.CronController.show(id)">Cronjob-@id</a>
+                          </div>
+                          <div class="cronjobTK col-xs-3">
+                            <a href="@routes.TransformationConfigurationsController.show(cron.tkid)">@cron.tkid @ts.filter(_.id.contains(cron.tkid)).map(_.name)</a>
+                          </div>
+                          <div class="cronjobFormat col-xs-4">
+                            <samp>@cron.format</samp>
+                          </div>
+                          <div class="cronjobActive col-xs-2">
+                            @if(cron.active) {
+                              <span class="text-success">@Messages("ui.activated")</span>
+                            } else {
+                              <span class="text-danger">@Messages("ui.deactivated")</span>
+                            }
+                          </div>
+                          <div class="cronjobOpener col-xs-1">
+                            <span class="pull-right glyphicon glyphicon-collapse-down" style="cursor: pointer;" data-toggle="collapse" data-target="#cronjobInfo-@id"></span>
+                          </div>
+                        </div>
+                        <div class="cronjobInfo rows clearfix collapse" id="cronjobInfo-@id">
+                          <div class="col-xs-12">
+                          @if(cron.description.isDefined) {
+                            <samp>@cron.description</samp>
+                          } else {
+                            <small>@Messages("ui.cron.description.empty")</small>
+                          }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  }
+
+                  </div>
+                </div>
+              </div>
+
+              <!-- Trigger -->
+              <div id="panel-trigger" class="panel panel-default">
+                <div class="panel-heading">
+                  <div class="panel-title">
+                    <a data-toggle="collapse" data-parent="#accordion" href="#collapseTriggers">
+                      <span class="caret"></span> <span class="glyphicon glyphicon-flag" aria-hidden="true"></span> @Messages("ui.mainnavbar.triggers")
+                    </a>
+                  </div>
+                </div>
+                <div id="collapseTriggers" class="panel-collapse collapse in">
+                  <div class="panel-body">
+
+                  @for(trigger <- triggers) {
+                    @trigger.id.fold(Html("")) { id =>
+                      <div class="triggerEntry clearfix">
+                        <div class="triggerGeneral rows clearfix">
+                          <div class="triggerName col-xs-2">
+                            <a href="@routes.TriggerController.show(id)">Trigger-@id</a>
+                          </div>
+                          <div class="triggerTK col-xs-3">
+                            <a href="@routes.TransformationConfigurationsController.show(trigger.tkid)">@trigger.tkid @ts.filter(_.id.contains(trigger.tkid)).map(tk => tk.name)</a>
+                          </div>
+                          <div class="triggerFormat col-xs-4">
+                            @if(trigger.endpointUri.isDefined) {
+                              <samp>@trigger.endpointUri</samp>
+                            } else {
+                              @ts.find(_.id == trigger.triggerTkId).fold {
+                                @trigger.triggerTkId.fold(Html("")) { id =>
+                                  <a href="@routes.TransformationConfigurationsController.show(id)">@trigger.triggerTkId</a>
+                                }
+                              } { tc =>
+                                @tc.id.fold(Html("")) { id =>
+                                  <a href="@routes.TransformationConfigurationsController.show(id)">@tc.id @tc.name</a>
+                                }
+                              }
+                            }
+                          </div>
+                          <div class="triggerActive col-xs-2">
+                          @if(trigger.active) {
+                            <span class="text-success">@Messages("ui.activated")</span>
+                          } else {
+                            <span class="text-danger">@Messages("ui.deactivated")</span>
+                          }
+                          </div>
+                          <div class="triggerOpener col-xs-1">
+                            <span class="pull-right glyphicon glyphicon-collapse-down" style="cursor: pointer;" data-toggle="collapse" data-target="#triggerInfo-@id"></span>
+                          </div>
+                        </div>
+                        <div class="triggerInfo rows clearfix collapse" id="triggerInfo-@id">
+                          <div class="col-xs-12">
+                          @if(trigger.description.isDefined) {
+                            <samp>@trigger.description</samp>
+                          } else {
+                            <small>@Messages("ui.trigger.description.empty")</small>
+                          }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div role="tabpanel" class="tab-pane" id="statistics">
+            <div class="panel-group clearfix">
+              <!-- TCQueueHistory -->
+              <div id="panel-charts-tchistory" class="panel panel-default">
+                <div class="panel-heading">
+                  <div class="panel-title">
+                    <a data-toggle="collapse" data-parent="#accordion" href="#collapseChartsTCHistory">
+                      <span class="caret"></span> @Messages("ui.dashboard.charts.tchistory")
+                    </a>
+                  </div>
+                </div>
+                <div id="collapseChartsTCHistory" class="panel-collapse collapse in">
+                  <div class="panel-body">
+                    <div class="charts clearfix">
+                      <div class="col-xs-12 col-sm-4 containerChart">
+                        <h4>@Messages("models.tcqueuehistory.chart.startedBy")</h4>
+                        <div id="chartTCType">@Messages("ui.dashboard.charts.empty")</div>
+                      </div>
+                      <div class="col-xs-12 col-sm-4 containerChart">
+                        <h4>@Messages("models.tcqueuehistory.chart.statusFinish")</h4>
+                        <div id="chartTCStatus">@Messages("ui.dashboard.charts.empty")</div>
+                      </div>
+                      <div class="col-xs-12 col-sm-4 containerChart">
+                        <h4>@Messages("models.tcqueuehistory.chart.duration")</h4>
+                        <div id="chartTCTime">@Messages("ui.dashboard.charts.empty")</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

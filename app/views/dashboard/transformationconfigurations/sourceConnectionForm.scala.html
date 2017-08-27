@@ -1,0 +1,29 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(counter: Int, form: Form[DfasdlConnectionMapping], connections: Seq[ConnectionInformationResource], dfasdlIdMappings: Map[String, String])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+<div class="form-group">
+  <input type="hidden" id="sources[@counter].dfasdlId" name="sources[@counter].dfasdlId" value="@form("dfasdlId").value" readonly>
+  <label for="sources[@counter].connectionInformationId" style="width: 300px;">@Messages("models.transformationconfiguration.sourceConnection.dfasdl", dfasdlIdMappings.getOrElse(form("dfasdlId").value.getOrElse(""), "UNDEFINED"))</label>
+  <select id="sources[@counter].connectionInformationId" name="sources[@counter].connectionInformationId">
+    <option value=""></option>
+    @for(c <- connections) {
+      <option value="@c.id" @if(form("connectionInformationId").value.fold(false)(v => c.id.fold(false)(i => i.toString == v))) { selected="selected" }>@c.connection.uri</option>
+    }
+  </select>
+</div>

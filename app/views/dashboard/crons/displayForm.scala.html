@@ -1,0 +1,199 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(form: Form[forms.CronForm.Data], canSave: Boolean, groups: Seq[Group], transformationConfigurations: Seq[TransformationConfiguration], userNames: Seq[UserNameInfo], target: Call)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import helpers.authorisationFormElements
+
+@helper.form(target, 'role -> "form") {
+  @helper.CSRF.formField
+
+  @form.globalError.map { error =>
+    <p class="alert alert-danger">
+      <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+      <span class="sr-only">Error:</span>
+      @error.message
+    </p>
+  }
+
+  <div class="form-group">
+    <label for="tkid">@Messages("models.transformationconfiguration")</label>
+    <select id="tkid" name="tkid" class="form-control">
+      @for(tc <- transformationConfigurations) {
+        <option value="@tc.id" @if(tc.id.contains(form("tkid").value.getOrElse("0").toLong)){selected="selected"}>@tc.name</option>
+      }
+    </select>
+    <div class="help-text">@Messages("ui.cron.tkid.info")</div>
+    @form.errors("tkid").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  <div class="form-group">
+    <label for="format">@Messages("models.cron.format")</label>
+    <input type="text" id="format" name="format" class="form-control" value="@form("format").value.getOrElse("")">
+    <div class="help-text">@Messages("ui.cron.format.info")</div>
+    @form.errors("format").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+    <div style="cursor: pointer;" data-toggle="collapse" data-target="#formatDefinition">
+      <h5><span class="glyphicon glyphicon-collapse-down"></span> @Messages("ui.cron.format.definition")</h5>
+    </div>
+    <div id="formatDefinition" class="collapse" style="padding: 10px 20px; border: 1px dashed #ccc">
+      <u>@Messages("ui.cron.format.definition.fields")</u><br /><br />
+      @Messages("ui.cron.format.definition.fields.explain")<br />
+      <code>@Messages("ui.cron.format.definition.fields.explain2")</code><br /><br />
+      <table class="table table-striped table-bordered table-condensed table-responsive">
+        <thead>
+          <tr>
+            <th>@Messages("ui.cron.format.definition.name")</th>
+            <th>@Messages("ui.cron.format.definition.allowed")</th>
+            <th>@Messages("ui.cron.format.definition.special")</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>@Messages("ui.cron.format.definition.name.field1")</td>
+            <td>@Messages("ui.cron.format.definition.allowed.field1")</td>
+            <td>@Messages("ui.cron.format.definition.special.field1")</td>
+          </tr>
+          <tr>
+            <td>@Messages("ui.cron.format.definition.name.field2")</td>
+            <td>@Messages("ui.cron.format.definition.allowed.field2")</td>
+            <td>@Messages("ui.cron.format.definition.special.field2")</td>
+          </tr>
+          <tr>
+            <td>@Messages("ui.cron.format.definition.name.field3")</td>
+            <td>@Messages("ui.cron.format.definition.allowed.field3")</td>
+            <td>@Messages("ui.cron.format.definition.special.field3")</td>
+          </tr>
+          <tr>
+            <td>@Messages("ui.cron.format.definition.name.field4")</td>
+            <td>@Messages("ui.cron.format.definition.allowed.field4")</td>
+            <td>@Messages("ui.cron.format.definition.special.field4")</td>
+          </tr>
+          <tr>
+            <td>@Messages("ui.cron.format.definition.name.field5")</td>
+            <td>@Messages("ui.cron.format.definition.allowed.field5")</td>
+            <td>@Messages("ui.cron.format.definition.special.field5")</td>
+          </tr>
+          <tr>
+            <td>@Messages("ui.cron.format.definition.name.field6")</td>
+            <td>@Messages("ui.cron.format.definition.allowed.field6")</td>
+            <td>@Messages("ui.cron.format.definition.special.field6")</td>
+          </tr>
+          <tr>
+            <td>@Messages("ui.cron.format.definition.name.field7")</td>
+            <td>@Messages("ui.cron.format.definition.allowed.field7")</td>
+            <td>@Messages("ui.cron.format.definition.special.field7")</td>
+          </tr>
+        </tbody>
+      </table>
+      <u>@Messages("ui.cron.format.explanation")</u><br /><br />
+      <table class="table table-striped table-bordered table-condensed table-responsive format_explanation">
+        <thead>
+          <tr>
+            <th>@Messages("ui.cron.format.explanation.character")</th>
+            <th>@Messages("ui.cron.format.explanation.description")</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="explanation_character">*</td>
+            <td>@Messages("ui.cron.format.explanation.char1")</td>
+          </tr>
+          <tr>
+            <td class="explanation_character">?</td>
+            <td>@Messages("ui.cron.format.explanation.char2")</td>
+          </tr>
+          <tr>
+            <td class="explanation_character">-</td>
+            <td>@Messages("ui.cron.format.explanation.char3")</td>
+          </tr>
+          <tr>
+            <td class="explanation_character">,</td>
+            <td>@Messages("ui.cron.format.explanation.char4")</td>
+          </tr>
+          <tr>
+            <td class="explanation_character">/</td>
+            <td>@Messages("ui.cron.format.explanation.char5")</td>
+          </tr>
+          <tr>
+            <td class="explanation_character">L</td>
+            <td>@Messages("ui.cron.format.explanation.char6")</td>
+          </tr>
+          <tr>
+            <td class="explanation_character">W</td>
+            <td>@Messages("ui.cron.format.explanation.char7")</td>
+          </tr>
+          <tr>
+            <td class="explanation_character">L + W</td>
+            <td>@Messages("ui.cron.format.explanation.char8")</td>
+          </tr>
+          <tr>
+            <td class="explanation_character">#</td>
+            <td>@Messages("ui.cron.format.explanation.char9")</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div>
+        <a href="http://www.quartz-scheduler.org/api/2.1.7/org/quartz/CronExpression.html" target="_blank">@Messages("ui.cron.format.explanation.docs")</a>
+      </div>
+
+      <u>@Messages("ui.cron.format.example")</u><br /><br />
+      @Messages("ui.cron.format.examples.one") : <code>@Messages("ui.cron.format.examples.one.value")</code><br />
+      @Messages("ui.cron.format.examples.two") : <code>@Messages("ui.cron.format.examples.two.value")</code><br />
+      @Messages("ui.cron.format.examples.three") : <code>@Messages("ui.cron.format.examples.three.value")</code><br />
+      @Messages("ui.cron.format.examples.four") : <code>@Messages("ui.cron.format.examples.four.value")</code><br />
+      @Messages("ui.cron.format.examples.five") : <code>@Messages("ui.cron.format.examples.five.value")</code><br />
+    </div>
+
+  </div>
+
+  <div class="form-group">
+    <label for="description">@Messages("models.cron.description")</label>
+    <textarea id="description" name="description" class="form-control">@form("description").value.getOrElse("")</textarea>
+    <div class="help-text">@Messages("ui.cron.description.info")</div>
+    @form.errors("description").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  <div class="form-group">
+    <div class="checkboxes">
+      <label class="checkbox-inline">
+        <input type="checkbox" id="active" name="active" value="true" @if(form("active").value.contains("true")){checked="checked"}>
+        @Messages("models.cron.active")
+      </label>
+    </div>
+    <div class="help-text">@Messages("ui.cron.active.info")</div>
+    @form.errors("active").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  @authorisationFormElements(form, userNames, groups)
+
+  @if(canSave) {
+    <button type="submit" class="btn btn-primary">@Messages("ui.save")</button>
+  } else {
+    <button type="reset" class="btn btn-primary" disabled="disabled">@Messages("ui.save")</button>
+  }
+  <a href="@routes.CronController.index()" class="btn btn-default">@Messages("ui.cancel")</a>
+}
+

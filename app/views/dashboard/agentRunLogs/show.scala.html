@@ -1,0 +1,93 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(tcName: Option[String], userName: Option[String], th: WorkHistoryEntry, ls: Seq[AgentRunLogLine])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+@import dashboard.agentRunLogs.logLines
+@import dashboard.transformationconfigurations.timestamp
+
+@js = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/agentRunLogSocket.js")"></script>
+}
+
+@base(Messages("ui.logs.show.title", tcName.getOrElse("UNKNOWN CONFIG")), customScripts = js) {
+  <h2>@Messages("ui.logs.show.title", tcName.getOrElse("UNKNOWN CONFIG"))</h2>
+
+  <table class="table table-responsive">
+    <thead>
+      <tr>
+        <th>@Messages("ui.logs.transformationConfiguration")</th>
+        <th>@Messages("ui.logs.status")</th>
+        <th>@Messages("ui.logs.startedAt")</th>
+        <th>@Messages("ui.logs.finishedAt")</th>
+        <th>@Messages("ui.logs.startedBy")</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <span class="glyphicon glyphicon-briefcase" aria-hidden="true"></span>
+          <a href="@routes.TransformationConfigurationsController.show(th.tkid)">@tcName.getOrElse("UNKNOWN CONFIG")</a>
+        </td>
+        <td class="@if(th.aborted){bg-warning text-warning}else{@if(th.completed){bg-success text-success}else{@if(th.failed){bg-danger text-danger}else{bg-info text-info}}}">
+          @if(th.aborted) {
+            <span class="text-warning">@Messages("models.tcqueuehistory.aborted")</span>
+          } else {
+            @if(th.completed) {
+              <span class="text-success">@Messages("models.tcqueuehistory.completed")</span>
+            } else {
+              @if(th.failed) {
+                <span class="text-danger">@Messages("models.tcqueuehistory.error")</span>
+              } else {
+                ...
+              }
+            }
+          }
+        </td>
+        <td>@th.started.map(t => timestamp(t.getTime))</td>
+        <td>@th.finished.map(t => timestamp(t.getTime))</td>
+        <td>
+          @if(th.user.isDefined) {
+            <span class="glyphicon glyphicon-user"></span> @userName.map(n => n)
+          } else {
+            @if(th.cron) {
+              <span class="glyphicon glyphicon-time"></span> @Messages("ui.logs.cronjob")
+            } else {
+              @if(th.trigger) {
+                <span class="glyphicon glyphicon-flag"></span> @Messages("ui.logs.trigger")
+              } else {
+                -
+              }
+            }
+          }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  @th.message.fold(Html("")) { errorMessage =>
+    <h3>@Messages("models.tcqueuehistory.errorMessage")</h3>
+    <div class="alert alert-danger">
+      @errorMessage
+    </div>
+  }
+
+  <h3>@Messages("ui.log.entries")</h3>
+
+  <pre id="logdata" data-uuid="@th.uuid" style="white-space: pre-wrap; word-break: normal;">@logLines(ls)<div id="logs-loading" class="text-center"><img src="@routes.Assets.versioned("img/ajax-loader-logs.gif")"/><span class="small text-muted"> @Messages("ui.logs.loading")</span></div></pre>
+}

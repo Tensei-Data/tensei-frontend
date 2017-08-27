@@ -1,0 +1,93 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(form: Form[forms.UnlockForm.Data])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@main(Messages("unlock.title")) {
+  <div class="container">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 400px;">
+      @flash.get("error").map { error =>
+        <p class="alert alert-danger">
+          <span class="glyphicon glyphicon-alert" aria-hidden="true"></span>
+          <span class="sr-only">Error:</span>
+          @error
+        </p>
+      }
+      @flash.get("info").map { info =>
+        <p class="alert alert-info">
+          <span class="glyphicon glyphicon-info-sign"></span>
+          <span class="sr-only">Info:</span>
+          @info
+        </p>
+      }
+      <div>
+        <img class="center-block" src="@routes.Assets.versioned("images/logo-256.png")"/>
+        <div class="panel panel-danger centering">
+          <div class="panel-heading">
+            <div class="panel-logo">
+              <span class="lead">@Messages("unlock.title")</span>
+            </div>
+          </div>
+          <div class="panel-body">
+          @helper.form(routes.Authentication.unlockUser(), 'role -> "form") {
+            @helper.CSRF.formField
+            <input type="hidden" name="unlockToken" value="@form("unlockToken").value">
+
+            @form.globalError.map { error =>
+              <p class="alert alert-danger">
+                <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+                <span class="sr-only">Error:</span>
+                @error.message
+              </p>
+            }
+
+            <div class="form-group">
+              <label for="password">@Messages("unlock.password")</label>
+              <input type="password" class="form-control" name="password.main" id="password.main" placeholder="@Messages("unlock.password-placeholder")">
+              @if(form.errors("password").nonEmpty || form.errors("password.main").nonEmpty) {
+                <div class="alert-warning">
+                  <ul>
+                    @form.errors("password.main").map { error =>
+                      <li><span>@Messages(error.message, error.args: _*)</span></li>
+                    }
+                    @form.errors("password").map { error =>
+                      <li><span>@Messages(error.message, error.args: _*)</span></li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+            <div class="form-group">
+              <label for="password.confirm">@Messages("unlock.password-confirmation")</label>
+              <input type="password" class="form-control" name="password.confirm" id="password.confirm" placeholder="@Messages("unlock.password-confirmation-placeholder")">
+              @if(form.errors("password.confirm").nonEmpty) {
+                <div class="alert-warning">
+                  <ul>
+                  @form.errors("password.confirm").map { error =>
+                    <li><span>@Messages(error.message, error.args: _*)</span></li>
+                  }
+                  </ul>
+                </div>
+              }
+            </div>
+            <button type="submit" class="btn btn-default">@Messages("unlock.submit")</button>
+          }
+          </div>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,46 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(startedByCron: Boolean, startedByTrigger: Boolean, startedByUser: Option[Int], started:String, agent: Map[String, com.wegtam.tensei.adt.AgentInformation], percentageCompleted: Option[Int], runtime: java.time.Duration, tkid: Long, uuid: String)(implicit messages: Messages, webJarAssets: WebJarAssets)
+
+@import helpers.dashboard.agentProgressBar
+@import helpers.dashboard.duration
+
+<div class="tkActiveTransformationEntry clearfix">
+  <div class="col-xs-3">
+    @startedByUser.fold{
+      @if(startedByCron) {
+        <span class="glyphicon glyphicon-time"></span>
+      } else {
+        <span class="glyphicon glyphicon-flag"></span>
+      }
+    }{uid =>
+      <span class="glyphicon glyphicon-user"></span>
+    }
+    <span class="dateStarted"> S: @started</span></div>
+  <div class="col-xs-4">
+    @agent.headOption.fold {
+      @Messages("ui.dashboard.tkstatus.notyetstarted")
+    } { ah =>
+      @agentProgressBar(ah._2, percentageCompleted.getOrElse(0))
+    }
+  </div>
+  <div class="col-xs-4">@Messages("ui.dashboard.tkstatus.runtime"): <samp>@duration(runtime)</samp><a class="logsLink" href="@routes.AgentRunLogsController.show(uuid)">( @Messages("ui.dashboard.tkstatus.logs") )</a></div>
+  <div class="col-xs-1">
+    <a id="button-stop-transformation-@tkid" class="btn btn-default btn-xs text-danger" onclick="stopTransformation(@tkid, '@uuid');"><span class="glyphicon glyphicon-stop text-danger"></span></a>
+  </div>
+</div>

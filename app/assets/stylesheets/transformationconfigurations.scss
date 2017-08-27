@@ -1,0 +1,32 @@
+/*
+ * Tensei Frontend
+ *
+ * Copyright (C) 2014 - 2015 Wegtam UG
+ *
+ * Unauthorized copying of this file, via any medium is strictly prohibited!
+ * Proprietary and confidential
+ *
+ */
+
+@import "variables";
+
+table {
+  .parameter {
+    font-weight: bold;
+  }
+}
+
+table.index {
+  ul {
+    padding-left: 20px;
+  }
+}
+
+#tkEditForm {
+  select#sourceConnectionResources option,
+  select#targetConnectionResource option {
+    padding: 5px;
+    display: block;
+    border-radius: 0;
+  }
+}

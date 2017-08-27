@@ -1,0 +1,36 @@
+/*
+ * Tensei Frontend
+ *
+ * Copyright (C) 2014 - 2015 Wegtam UG
+ *
+ * Unauthorized copying of this file, via any medium is strictly prohibited!
+ * Proprietary and confidential
+ *
+ */
+
+.editor-shortcuts {
+  font-size: 12px;
+
+  .header {
+    font-weight: bold;
+  }
+
+  .examples {
+    line-height: 20px;
+  }
+}
+
+.containerChart {
+  text-align: center;
+}
+
+.CodeMirror-hints {
+  padding: 5px;
+  overflow-y: scroll;
+}
+
+.CodeMirror-hint {
+  overflow: visible;
+  padding: 3px 20px 3px 3px;
+  font-size: 100%;
+}

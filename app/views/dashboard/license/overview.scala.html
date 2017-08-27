@@ -1,0 +1,92 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@import controllers.AdministrationController.LicenseMetaData
+@import controllers.AdministrationController.LicenseEntitiesData
+@(metaDataOpt: Option[LicenseMetaData], entitiesDataOpt: Option[LicenseEntitiesData])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+
+@base(Messages("ui.license")) {
+  <span id="disable-license-check" style="display: none;"></span>
+  <div class="panel panel-info">
+    <div class="panel-heading">@Messages("ui.app.version.title")</div>
+    <div class="panel-body">@Messages("ui.app.version.text", com.wegtam.tensei.BuildInfo.version, com.wegtam.tensei.BuildInfo.buildTime)</div>
+  </div>
+
+  <h3>@Messages("ui.license")</h3>
+  @metaDataOpt.fold{
+    <div class="jumbotron">
+      <h1>@Messages("ui.license.nodata")</h1>
+      <p>@Messages("ui.license.nodata.message")</p>
+      <p>
+        <a class="btn btn-lg btn-primary" role="button" href="https://www.wegtam.com/contact/license_request?pk_campaign=fromFrontend" target="_blank" title="@Messages("ui.license.nodata.link.hint")">@Messages("ui.license.nodata.link")</a>
+      </p>
+    </div>
+  }{metaData =>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>@Messages("ui.license.id")</th>
+          <th>@Messages("ui.license.licensee")</th>
+          <th>@Messages("ui.license.expiration")</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>@metaData.id</td>
+          <td>@metaData.licensee</td>
+          <td>
+            @if(metaData.period.getYears > 0){
+              @Messages("ui.license.duration.years", metaData.period.getYears)
+            }
+            @if(metaData.period.getMonths > 0){
+              @Messages("ui.license.duration.months", metaData.period.getMonths)
+            }
+            @if(metaData.period.getDays > 0){
+              @Messages("ui.license.duration.days", metaData.period.getDays)
+            }
+            @if(metaData.period.getDays < 0){
+              <div class="alert alert-danger" role="alert">@Messages("ui.license.duration.expired", Math.abs(metaData.period.getDays))</div>
+            }
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>@Messages("ui.license.configuration")</h4>
+    @entitiesDataOpt.fold{
+      
+    }{entitiesData =>
+      <dl>
+        <dt>@Messages("ui.license.agents")</dt>
+        <dd>@entitiesData.numberOfAgents</dd>
+        <dt>@Messages("ui.license.configurations")</dt>
+        <dd>@entitiesData.numberOfConfigurations</dd>
+        <dt>@Messages("ui.license.cronjobs")</dt>
+        <dd>@entitiesData.numberOfCronjobs</dd>
+        <dt>@Messages("ui.license.triggers")</dt>
+        <dd>@entitiesData.numberOfTriggers</dd>
+        <dt>@Messages("ui.license.user")</dt>
+        <dd>@entitiesData.numberOfUsers</dd>
+      </dl>
+    }
+  }
+
+  <h3>@Messages("ui.license.import")</h3>
+  <a href="@routes.AdministrationController.licenseUpdate()" class="btn btn-default">@Messages("ui.license.import.button")</a>
+}

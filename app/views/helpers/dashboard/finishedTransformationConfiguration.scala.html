@@ -1,0 +1,49 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(uuid: String, startedByCron: Boolean, startedByTrigger: Boolean, startedByUser: Option[Int], finished: String, runtime: java.time.Duration, success: Boolean, aborted: Boolean, error: Boolean, errorMessage: Option[String])(implicit messages: Messages, webJarAssets: WebJarAssets)
+
+@import helpers.dashboard.duration
+
+<div class="tkFinishedTransformationEntry clearfix">
+  <div class="col-xs-4">
+    @if(startedByUser.isDefined) {
+      <span class="glyphicon glyphicon-user"></span>
+    } else {@if(startedByCron) {
+      <span class="glyphicon glyphicon-time"></span>
+    } else {
+      <span class="glyphicon glyphicon-flag"></span>
+    }}
+    <span class="dateFinished"> F: @finished</span></div>
+  <div class="col-xs-4">
+    @Messages("ui.dashboard.tkstatus.status"):
+    <a href="@routes.AgentRunLogsController.show(uuid)">
+      @if(aborted) {
+        <span class="bg-warning text-warning">@Messages("models.tcqueuehistory.aborted")</span>
+      } else {
+        @if(success) {
+          <span class="bg-success text-success">@Messages("models.tcqueuehistory.completed")</span>
+        } else {
+          <span class="bg-danger text-danger" title="@errorMessage">@Messages("models.tcqueuehistory.error")</span>
+        }
+      }
+    </a>
+  </div>
+  <div class="col-xs-4">
+    @Messages("ui.dashboard.tkstatus.runtime"): <samp>@duration(runtime)</samp>
+  </div>
+</div>

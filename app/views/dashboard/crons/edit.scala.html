@@ -1,0 +1,34 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(id: Long, form: Form[forms.CronForm.Data], canSave: Boolean, groups: Seq[Group], transformationConfigurations: Seq[TransformationConfiguration], userNames: Seq[UserNameInfo])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+@import dashboard.crons.displayForm
+
+@myCss = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/cron.css")">
+}
+
+@myScripts = {
+  <script type="text/javascript" src="@routes.Assets.versioned("javascripts/togglePrivilegeSettings.js")"></script>
+}
+
+@base(Messages("ui.edit.model", Messages("models.cron")), customCss = myCss, customScripts = myScripts) {
+  <h3>Cronjob @id</h3>
+  @displayForm(form, canSave, groups, transformationConfigurations, userNames, routes.CronController.update(id))
+}

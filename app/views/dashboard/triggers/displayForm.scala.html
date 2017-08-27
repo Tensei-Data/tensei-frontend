@@ -1,0 +1,171 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(form: Form[forms.TriggerForm.Data], canSave: Boolean, groups: Seq[Group], transformationConfigurations: Seq[TransformationConfiguration], userNames: Seq[UserNameInfo], target: Call)(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import helpers.authorisationFormElements
+
+@helper.form(target, 'role -> "form") {
+  @helper.CSRF.formField
+
+  @form.globalError.map { error =>
+    <p class="alert alert-danger">
+      <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+      <span class="sr-only">Error:</span>
+      @error.message
+    </p>
+  }
+
+  @flash.get("success").map { message =>
+    <p class="alert alert-success">
+      <span class="glyphicon glyphicon-ok-circle" aria-hidden="true"></span>
+      <span class="sr-only">Error:</span>
+      @message
+    </p>
+  }
+
+  <div class="form-group">
+    <h3>Trigger-<input style="border: none; background-color: transparent; padding: 0;" type="text" id="id" name="id" value="@form("id").value.getOrElse("?")" disabled></h3>
+  </div>
+
+  <div class="form-group">
+    <label for="tkid">@Messages("models.transformationconfiguration")</label>
+    @if(transformationConfigurations.isEmpty) {
+      <p class="padded bg-danger">@Messages("ui.empty.model", Messages("models.transformationconfiguration"))</p>
+    } else {
+      <select id="tkid" name="tkid" class="form-control">
+        <option></option>
+        @for(t <- transformationConfigurations) {
+          <option value="@t.id" @if(t.id.contains(form("tkid").value.getOrElse("0").toLong)) {
+            selected="selected"
+            }>@t.name</option>
+        }
+      </select>
+      <div class="help-text">@Messages("ui.trigger.tkid.info")</div>
+    }
+    @form.errors("tkid").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading">@Messages("ui.trigger.source_selector.heading")</div>
+    <div class="panel-body">
+      <label class="radio-inline">
+        <input type="radio" name="source_selector" id="source_selector_camel" value="camel">@Messages("ui.trigger.source_selector.camel")
+      </label>
+      <label class="radio-inline">
+        <input type="radio" name="source_selector" id="source_selector_tc" value="tc">@Messages("ui.trigger.source_selector.transformation_configuration")
+      </label>
+
+      <p></p>
+      <div class="form-group" id="endpoint_uri_wrapper">
+        <label for="endpointUri">@Messages("models.trigger.endpointuri")</label>
+        <input type="text" id="endpointUri" name="endpointUri" class="form-control" value="@form("endpointUri").value.getOrElse("")">
+        <div class="help-text">@Messages("ui.trigger.endpointuri.info")</div>
+        @form.errors("endpointUri").map { error =>
+          <p class="alert-warning">@Messages(error.message)</p>
+        }
+
+        <div style="cursor: pointer;" data-toggle="collapse" data-target="#triggerDefinition">
+          <h5><span class="glyphicon glyphicon-collapse-down"></span> @Messages("ui.trigger.definition")</h5>
+        </div>
+        <div id="triggerDefinition" class="collapse" style="padding: 10px 20px; border: 1px dashed #ccc">
+          <u>@Messages("ui.trigger.examples")</u>
+          <div class="trigger_example">
+            <span class="trigger_example_head">@Messages("ui.trigger.examples.one")</span>
+            <samp>@Messages("ui.trigger.examples.one.value")</samp><br />
+            <code>@Messages("ui.trigger.examples.one.specific")</code><br />
+          </div>
+          <div class="trigger_example">
+            <span class="trigger_example_head">@Messages("ui.trigger.examples.oneTwo")</span>
+            <samp>@Messages("ui.trigger.examples.oneTwo.value")</samp><br />
+            <code>@Messages("ui.trigger.examples.oneTwo.specific")</code><br />
+          </div>
+          <div class="trigger_example">
+            <span class="trigger_example_head">@Messages("ui.trigger.examples.three")</span>
+            <samp>@Messages("ui.trigger.examples.three.value")</samp><br />
+            <code>@Messages("ui.trigger.examples.three.specific")</code><br />
+          </div>
+          <div class="trigger_example">
+            <span class="trigger_example_head">@Messages("ui.trigger.examples.four")</span>
+            <samp>@Messages("ui.trigger.examples.four.value")</samp><br />
+            <code>@Messages("ui.trigger.examples.four.specific")</code><br />
+          </div>
+        </div>
+
+      </div>
+
+      <div class="form-group" id="trigger_transformation_configuration_wrapper">
+        <label for="triggerTkId">@Messages("models.transformationconfiguration")</label>
+        @if(transformationConfigurations.isEmpty) {
+          <p class="padded bg-danger">@Messages("ui.empty.model", Messages("models.transformationconfiguration"))</p>
+        } else {
+          <select id="triggerTkId" name="triggerTransformation" class="form-control">
+            <option></option>
+            @for(t <- transformationConfigurations) {
+              <option value="@t.id" @if(t.id.contains(form("triggerTransformation").value.getOrElse("0").toLong)) {
+                selected="selected"
+                }>@t.name</option>
+            }
+          </select>
+          <div class="help-text">@Messages("ui.trigger.triggerTkId.info")</div>
+        }
+        @form.errors("triggerTransformation").map { error =>
+          <p class="alert-warning">@Messages(error.message)</p>
+        }
+      </div>
+
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="description">@Messages("models.trigger.description")</label>
+    <textarea id="description" name="description" class="form-control">@form("description").value.getOrElse("")</textarea>
+    <div class="help-text">@Messages("ui.trigger.description.info")</div>
+    @form.errors("description").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  <div class="form-group">
+    <label for="active">@Messages("models.trigger.active")</label>
+    <select id="active" name="active" class="form-control">
+      <option value="true" @if(!form("active").value.isDefined || form("active").value.contains("true")) {
+        selected="selected"
+        }>@Messages("ui.activated")</option>
+      <option value="false" @if(form("active").value.isDefined && form("active").value.contains("false")) {
+        selected="selected"
+        }>@Messages("ui.deactivated")</option>
+    </select>
+    <div class="help-text">@Messages("ui.trigger.active.info")</div>
+
+    @form.errors("active").map { error =>
+      <p class="alert-warning">@Messages(error.message)</p>
+    }
+  </div>
+
+  @authorisationFormElements(form, userNames, groups)
+
+  @if(canSave) {
+    <button type="submit" class="btn btn-primary">@Messages("ui.save")</button>
+  } else {
+    <button type="reset" class="btn btn-primary" disabled="disabled">@Messages("ui.save")</button><small class="licenseMaxInfo">@Messages("ui.license.maximum", 0, Messages("ui.license.triggers"))</small>
+  }
+  <a href="@routes.TriggerController.index()" class="btn btn-default">@Messages("ui.cancel")</a>
+}
+

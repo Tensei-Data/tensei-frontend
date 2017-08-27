@@ -1,0 +1,93 @@
+/*
+ * Tensei Frontend
+ *
+ * Copyright (C) 2014 - 2015 Wegtam UG
+ *
+ * Unauthorized copying of this file, via any medium is strictly prohibited!
+ * Proprietary and confidential
+ *
+ */
+
+a {
+  color: #1866c5;
+}
+
+.navbar {
+  min-height: 40px;
+
+  li {
+    a {
+      padding-top: 10px;
+      padding-bottom: 5px;
+      outline: none;
+    }
+  }
+
+  .username {
+    font-size: 12px;
+    color: #aaa;
+    padding-top: 11px;
+    padding-right: 10px;
+  }
+
+  .navbar-header {
+    height: 40px;
+
+    .navbar-brand {
+      height: 40px;
+      padding: 0;
+      background: url("../img/logo_30.png") no-repeat scroll 20px center transparent;
+      width: 80px;
+    }
+  }
+}
+
+.wrap {
+  margin-top: 50px;
+
+  .panel-empty {
+    margin-top: 20px;
+  }
+
+  .help-text {
+    color: #737373;
+    margin-bottom: 10px;
+    margin-top: 5px;
+  }
+
+  p.padded {
+    padding: 20px;
+  }
+
+  .pageTitle {
+    border: 1px solid #ddd;
+    background-color: #efefef;
+    padding: 10px;
+    line-height: 30px;
+    //border-radius: 5px;
+    margin-bottom: 10px;
+  }
+}
+
+.myTooltip {
+  .myTooltipArrow {
+  }
+  .myTooltipInner {
+    opacity: 1;
+    padding: 20px;
+    font-size: 14px;
+    background-color: #ddd;
+    border: 2px solid #aaa;
+    color: #000;
+    white-space: normal;
+  }
+}
+
+.licenseMaxInfoForButton {
+  float: right;
+  margin-left: 5px;
+}
+
+.licenseMaxInfo {
+  margin: 0 10px;
+}

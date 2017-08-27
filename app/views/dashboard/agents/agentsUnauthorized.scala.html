@@ -1,0 +1,72 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@import com.wegtam.tensei.adt.AgentInformation
+@(agents: Map[String, AgentInformation], allowedQueueEntries: Seq[String])(implicit flash: Flash, messages: Messages, request: RequestHeader, webJarAssets: WebJarAssets)
+
+@import dashboard.base
+@import dashboard.agents.timestamp
+
+@base(Messages("ui.agents.title")) {
+  <div class="clearfix pageTitle">
+    <span class="glyphicon glyphicon-cloud" aria-hidden="true"></span>
+    <span>@Messages("ui.mainnavbar.agents")</span>
+  </div>
+
+  <ul class="nav nav-tabs" role="tablist">
+    <li><a href="@routes.AgentsController.agents()"><span class="glyphicon glyphicon-resize-small"></span> @Messages("ui.agents.navbar.connected")</a></li>
+    <li><a href="@routes.AgentsController.agentsDisconnected()"><span class="glyphicon glyphicon-resize-full"></span> @Messages("ui.agents.navbar.disconnected")</a></li>
+    <li class="active"><a href="@routes.AgentsController.agentsUnauthorized()"><span class="glyphicon glyphicon-ban-circle"></span> @Messages("ui.agents.navbar.unauthorized")</a></li>
+  </ul>
+
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>@Messages("ui.agents.table.header.id")</th>
+        <th>@Messages("ui.agents.table.header.path")</th>
+        <th>@Messages("ui.agents.table.header.state")</th>
+        <th>@Messages("ui.agents.table.header.lastUpdated")</th>
+        <th>@Messages("ui.agents.table.header.running")</th>
+      </tr>
+    </thead>
+    <tbody>
+    @for(a <- agents) {
+      @defining(a._2) { info =>
+        <tr>
+          <td><a href="@routes.AgentsController.agentDetails(a._1)">@a._1</a></td>
+          <td>@info.path</td>
+          <td>@info.auth</td>
+          <td>@timestamp(info.lastUpdated)</td>
+          <td>
+          @defining(info.workingState.fold("")(s => s.uniqueIdentifier.fold("")(i => i))) { uuid =>
+            @if(uuid.isEmpty) {
+              <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+            } else {
+              @if(allowedQueueEntries.contains(uuid)) {
+                <a href="#">@uuid</a>
+              } else {
+                <span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span>
+              }
+            }
+          }
+          </td>
+        </tr>
+      }
+    }
+    </tbody>
+  </table>
+}

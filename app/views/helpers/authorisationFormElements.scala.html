@@ -1,0 +1,86 @@
+@*
+ * Copyright (C) 2014 - 2017  Contributors as noted in the AUTHORS.md file
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+
+@(form: Form[_], userNames: Seq[UserNameInfo], groups: Seq[Group])(implicit messages: Messages)
+
+<div class="form-group">
+  <div class="panel panel-info">
+    <div class="panel-heading">
+      <a href="#permission" data-toggle="collapse" data-parent="#accordion">PERMISSIONS<span class="caret"></span></a>
+    </div>
+    <div class="panel-body collapse" id="permission">
+      <label for="authorisation.ownerId">@Messages("models.ownerId")</label>
+      <select class="form-control" id="authorisation.ownerId" name="authorisation.ownerId">
+        @for(u <- userNames) {
+          <option value="@u.id" @if(form("authorisation.ownerId").value.contains(u.id.toString)){selected="selected"}>@u.name</option>
+        }
+      </select>
+      @form.errors("authorisation.ownerId").map { error =>
+        <p class="alert alert-warning">@Messages(error.message, error.args: _*)</p>
+      }
+
+      <label for="authorisation.groupId">@Messages("models.groupOwnership")</label>
+      <select class="form-control" id="authorisation.groupId" name="authorisation.groupId">
+        <option value="" @if(form("authorisation.groupId").value.isEmpty){selected="selected"}></option>
+        @for(g <- groups){
+          <option value="@g.id.fold("UNDEFINED-GID")(_.toString)" @if(form("groupId").value.contains(g.id.fold("")(_.toString))){selected="selected"}>@g.name</option>
+        }
+      </select>
+      @form.errors("authorisation.groupId").map { error =>
+        <p class="alert alert-warning">@Messages(error.message, error.args: _*)</p>
+      }
+
+      <label for="authorisation.groupPermissions">@Messages("models.groupPermissions")</label>
+      <select class="form-control" id="authorisation.groupPermissions" name="authorisation.groupPermissions">
+      @defining(form("authorisation.groupPermissions").value.getOrElse(Permission.encodeSet(Permission.DEFAULT_GROUP_PERMISSIONS).toString)) { s =>
+        <option value="0">@Messages("permissions.noPermission")</option>
+        @defining(Permission.encodeSet(Set(Permission.Execute, Permission.Read, Permission.Write)).toString) { p =>
+          <option value="@p" @if(p == s){selected="selected"}>rwx</option>
+        }
+        @defining(Permission.encodeSet(Set(Permission.Read, Permission.Write)).toString) { p =>
+          <option value="@p" @if(p == s){selected="selected"}>rw</option>
+        }
+        @defining(Permission.encodeSet(Set(Permission.Read)).toString) { p =>
+          <option value="@p" @if(p == s){selected="selected"}>r</option>
+        }
+      }
+      </select>
+      @form.errors("authorisation.groupPermissions").map { error =>
+        <p class="alert alert-warning">@Messages(error.message, error.args: _*)</p>
+      }
+
+      <label for="authorisation.worldPermissions">@Messages("models.worldPermissions")</label>
+      <select class="form-control" id="authorisation.worldPermissions" name="authorisation.worldPermissions">
+      @defining(form("authorisation.worldPermissions").value.getOrElse(Permission.encodeSet(Permission.DEFAULT_WORLD_PERMISSIONS).toString)) { s =>
+        <option value="0">@Messages("permissions.noPermission")</option>
+        @defining(Permission.encodeSet(Set(Permission.Execute, Permission.Read, Permission.Write)).toString) { p =>
+          <option value="@p" @if(p == s){selected="selected"}>rwx</option>
+        }
+        @defining(Permission.encodeSet(Set(Permission.Read, Permission.Write)).toString) { p =>
+          <option value="@p" @if(p == s){selected="selected"}>rw</option>
+        }
+        @defining(Permission.encodeSet(Set(Permission.Read)).toString) { p =>
+          <option value="@p" @if(p == s){selected="selected"}>r</option>
+        }
+      }
+      </select>
+      @form.errors("authorisation.worldPermissions").map { error =>
+        <p class="alert alert-warning">@Messages(error.message, error.args: _*)</p>
+      }
+    </div>
+  </div>
+</div>

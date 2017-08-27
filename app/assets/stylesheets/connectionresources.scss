@@ -1,0 +1,30 @@
+/*
+ * Tensei Frontend
+ *
+ * Copyright (C) 2014 - 2015 Wegtam UG
+ *
+ * Unauthorized copying of this file, via any medium is strictly prohibited!
+ * Proprietary and confidential
+ *
+ */
+
+#overlayWait {
+  background-color: rgba(0,0,0,0.5);
+  z-index: 10000;
+  position: absolute;
+  top: 0;
+}
+
+#overlayWaitInfo {
+  background-color: #ffffff;
+  text-align: center;
+  padding: 20px;
+  position: absolute;
+  border-radius: 10px;
+  -moz-border-radius: 10px;
+  z-index: 10500;
+
+  img {
+    padding-top: 20px;
+  }
+}

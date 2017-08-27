@@ -1,0 +1,291 @@
+/*
+ * Tensei Frontend
+ *
+ * Copyright (C) 2014 - 2015 Wegtam UG
+ *
+ * Unauthorized copying of this file, via any medium is strictly prohibited!
+ * Proprietary and confidential
+ *
+ */
+
+#dashboard {
+  font-size: 13px;
+
+  #dashboardTopNav {
+    text-align: center;
+    margin-top: 5px;
+
+    ul {
+      list-style: outside none none;
+      margin: 0 auto 4px;
+
+      li {
+        display: inline;
+        padding: 5px 15px;
+
+        a {
+          display: inline;
+          outline: none;
+        }
+
+        a:hover {
+          background-color: transparent;
+          color: #ff5a00;
+          outline: none;
+        }
+
+        a:focus {
+          background-color: transparent;
+          outline: none;
+        }
+      }
+
+      li.active {
+        border-top: 1px solid #bbb;
+        border-left: 1px solid #bbb;
+        border-right: 1px solid #bbb;
+        border-bottom: none;
+        box-shadow: 0 3px 2px -1px rgba(0, 0, 0, 0.1) inset;
+
+        a {
+          color: #ff5a00;
+        }
+      }
+    }
+  }
+
+  #initializer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: #ccc;
+    left: 0;
+    top: 0;
+    text-align: center;
+    padding-top: 20%;
+    font-weight: bold;
+    opacity: 0.5;
+    z-index: 500;
+    filter: alpha(opacity=50); /* For IE8 and earlier */
+  }
+
+  #initializerContent {
+    background-color: #fff;
+    color: #000;
+    font-weight: bold;
+    padding: 40px 20px;
+    width: 20%;
+    z-index: 1000;
+    position: absolute;
+    border: 1px solid #555;
+    text-align: center;
+    margin: 15% auto 0 40%;
+    -webkit-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+    -moz-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+    box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+  }
+
+  .panel-group .panel {
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.2);
+    border-color: #bbb;
+    border-radius: 0;
+  }
+
+  .panel-group .panel-title {
+    font-size: 14px;
+  }
+
+  #panel-transformations {
+    .tkEntry {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px dotted #ccc;
+
+      .tkGeneral {
+        .tkName {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .tkType {
+          .migrationSystems {
+            color: #aaa;
+            font-size: 12px;
+          }
+        }
+
+        .tkStatus {
+          .status-progress {
+            .tkActiveTransformationEntry {
+              padding-bottom: 2px;
+              //border-top: 1px dashed #ddd;
+              margin-bottom: 3px;
+              padding-top: 3px;
+
+              .logsLink {
+                padding-left: 3px;
+              }
+            }
+
+            .tkFinishedTransformationEntry {
+              padding-bottom: 2px;
+              //border-top: 1px dashed #ddd;
+              margin-bottom: 3px;
+              padding-top: 3px;
+            }
+
+            .progress {
+            }
+          }
+        }
+      }
+
+      .tkInfo {
+        border-top: 1px dashed #ccc;
+        margin-top: 15px;
+
+        .header {
+          font-weight: bold;
+          margin-top: 15px;
+        }
+      }
+    }
+  }
+
+  #tcqueue {
+    #tcQueueContainer {
+      margin-top: 10px;
+
+      .entry {
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 5px 10px;
+      }
+
+      .separator {
+        margin:0 20px;
+      }
+    }
+
+  }
+
+  #panel-agents {
+    .agentEntry {
+      border-bottom: 1px dotted #ccc;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+
+      .memoryAndSystemDesc {
+        font-weight: bold;
+
+        .value {
+          font-weight: normal;
+        }
+      }
+
+      .progress {
+        margin-bottom: 0;
+        height: 10px;
+      }
+
+      .agentName {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .agent-node-container {
+        margin: 2px;
+      }
+
+      .agentMemory {
+
+      }
+      .agentSystem {
+        .coreBar {
+          .progress-bar {
+            line-height: 10px;
+          }
+        }
+      }
+      .agentState {
+        text-align: center;
+
+        .glyphicon {
+          padding: 0;
+        }
+      }
+      .agentUpdated {
+      }
+
+      .tk {
+      }
+
+      .status {
+        .source {
+          font-weight: bold;
+          width: 90px;
+          display: inline-block;
+        }
+      }
+
+      .agentInfo {
+        border-top: 1px dashed #ccc;
+        margin-top: 15px;
+        padding-top: 15px;
+      }
+    }
+  }
+
+  #panel-cronjobs {
+    .cronjobEntry {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px dotted #ccc;
+
+      .cronjobGeneral {
+        .cronjobName {
+        }
+      }
+
+      .cronjobInfo {
+        border-top: 1px dashed #ccc;
+        margin-top: 15px;
+        padding-top: 15px;
+
+      }
+    }
+  }
+
+  #panel-trigger {
+    .triggerEntry {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px dotted #ccc;
+
+      .triggerGeneral {
+        .triggerName {
+        }
+      }
+
+      .triggerInfo {
+        border-top: 1px dashed #ccc;
+        margin-top: 15px;
+        padding-top: 15px;
+
+      }
+    }
+  }
+
+  #panel-server {
+
+  }
+
+  .charts {
+    .containerChart {
+      text-align: center;
+    }
+  }
+}
