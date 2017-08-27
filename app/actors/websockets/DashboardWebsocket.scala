@@ -212,7 +212,8 @@ class DashboardWebsocket(
     infos.map { i =>
       val id: Option[Long] = i._2.workingState.fold(None: Option[Long])(
         _.uniqueIdentifier.fold(None: Option[Long])(
-          uuid => activeEntries.find(e => e.uuid == uuid).fold(None: Option[Long])(e => Option(e.tkid))
+          uuid =>
+            activeEntries.find(e => e.uuid == uuid).fold(None: Option[Long])(e => Option(e.tkid))
         )
       )
       (i._1, createAgentHTML(id, i))

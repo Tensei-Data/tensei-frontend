@@ -135,27 +135,28 @@ class AgentsController @Inject()(
     * @param agentId The unique ID of the Tensei-Agent.
     * @return A detail page about the agent or an error page.
     */
-  def agentDetails(agentId: String) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def agentDetails(agentId: String) = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          fetchAgentInformations.map(
-            info =>
-              info
-                .get(agentId)
-                .fold(
-                  NotFound(
-                    views.html.errors.notFound(Messages("errors.notfound.title"),
-                                               Option(Messages("errors.notfound.header")))
-                  )
-                )(
-                  agentInfo => Ok(views.html.dashboard.agents.agentDetails(agentInfo))
-              )
-          )
-      }
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            fetchAgentInformations.map(
+              info =>
+                info
+                  .get(agentId)
+                  .fold(
+                    NotFound(
+                      views.html.errors.notFound(Messages("errors.notfound.title"),
+                                                 Option(Messages("errors.notfound.header")))
+                    )
+                  )(
+                    agentInfo => Ok(views.html.dashboard.agents.agentDetails(agentInfo))
+                )
+            )
+        }
   }
 
   /**

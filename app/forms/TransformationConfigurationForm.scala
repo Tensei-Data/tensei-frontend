@@ -30,7 +30,7 @@ object TransformationConfigurationForm {
   val form = Form(
     mapping(
       "name" -> optional(nonEmptyText).verifying("errors.element.name",
-                                                p => p.fold(true)(_.matches("[a-zA-Z0-9-]+"))),
+                                                 p => p.fold(true)(_.matches("[a-zA-Z0-9-]+"))),
       "cookbookResource" -> longNumber,
       "sources" -> list(
         mapping(

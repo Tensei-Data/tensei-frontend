@@ -92,7 +92,8 @@ class AgentRunLogsController @Inject()(
       ls        <- agentRunLogsDAO.all(uuid) if auth && to.isDefined
       maxOffset <- agentRunLogsDAO.getMaxOffset(uuid) if auth && to.isDefined
       startedBy <- ho.fold(Future.successful(None: Option[Account]))(
-        h => h.user.fold(Future.successful(None: Option[Account]))(id => authDAO.findAccountById(id))
+        h =>
+          h.user.fold(Future.successful(None: Option[Account]))(id => authDAO.findAccountById(id))
       ) if auth
     } yield {
       ho.fold(

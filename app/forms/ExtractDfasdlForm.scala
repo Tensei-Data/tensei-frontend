@@ -36,11 +36,12 @@ object ExtractDfasdlForm {
   final val DEFAULT_ENCODING  = "utf-8"
   final val DEFAULT_SEPARATOR = ","
 
-  val encodingConstraint: Constraint[String] = Constraint("constraints.encoding-check")({ encoding =>
-    if (encoding.isEmpty || Charsets.contains(encoding))
-      Valid
-    else
-      Invalid(Seq.empty)
+  val encodingConstraint: Constraint[String] = Constraint("constraints.encoding-check")({
+    encoding =>
+      if (encoding.isEmpty || Charsets.contains(encoding))
+        Valid
+      else
+        Invalid(Seq.empty)
   })
 
   val form = Form(

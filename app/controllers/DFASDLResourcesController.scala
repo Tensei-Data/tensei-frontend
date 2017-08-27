@@ -351,8 +351,9 @@ class DFASDLResourcesController @Inject()(
         .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
           uid =>
             for {
-              ro   <- dfasdlResourceDAO.findByDfasdlId(name)
-              auth <- ro.fold(Future.successful(false))(r => authorize(user, r.getReadAuthorisation))
+              ro <- dfasdlResourceDAO.findByDfasdlId(name)
+              auth <- ro
+                .fold(Future.successful(false))(r => authorize(user, r.getReadAuthorisation))
             } yield {
               render {
                 case Accepts.Html() =>
@@ -427,8 +428,10 @@ class DFASDLResourcesController @Inject()(
         .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
           uid =>
             for {
-              ro   <- dfasdlResourceDAO.findById(id)(loadDfasdl = true)
-              auth <- ro.fold(Future.successful(false))(r => authorize(user, r.getReadAuthorisation))
+              ro <- dfasdlResourceDAO.findById(id)(loadDfasdl = true)
+              auth <- ro.fold(Future.successful(false))(
+                r => authorize(user, r.getReadAuthorisation)
+              )
               vs <- ro.fold(Future.successful(Seq.empty[String]))(
                 r => dfasdlResourceDAO.loadDfasdlVersions(r.dfasdl.id)
               ) if auth
@@ -830,7 +833,7 @@ class DFASDLResourcesController @Inject()(
                     "message" -> Messages("validate.dfasdl.warning"),
                     "class"   -> "text-warning",
                     "error" -> Messages("validate.dfasdl.reservedNames",
-                                       reservedNames.mkString(", "))
+                                        reservedNames.mkString(", "))
                   ).asJson.nospaces
                 ).as("application/json")
               else
@@ -860,8 +863,10 @@ class DFASDLResourcesController @Inject()(
         .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
           uid =>
             for {
-              ro   <- dfasdlResourceDAO.findById(id)(loadDfasdl = true)
-              auth <- ro.fold(Future.successful(false))(r => authorize(user, r.getReadAuthorisation))
+              ro <- dfasdlResourceDAO.findById(id)(loadDfasdl = true)
+              auth <- ro.fold(Future.successful(false))(
+                r => authorize(user, r.getReadAuthorisation)
+              )
               vs <- ro.fold(Future.successful(Seq.empty[String]))(
                 r => dfasdlResourceDAO.loadDfasdlVersions(r.dfasdl.id)
               ) if auth
