@@ -1,5 +1,8 @@
 # Tensei Frontend
 
+[![Build Status](https://travis-ci.org/Tensei-Data/tensei-frontend.svg?branch=master)](https://travis-ci.org/Tensei-Data/tensei-frontend)
+[![codecov](https://codecov.io/gh/Tensei-Data/tensei-frontend/branch/master/graph/badge.svg)](https://codecov.io/gh/Tensei-Data/tensei-frontend)
+
 The graphical user interface for a Tensei (転成) system.
 It provides a web based user interface and additional features like
 cronjobs and triggers.
