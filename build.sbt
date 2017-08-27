@@ -201,7 +201,8 @@ lazy val commonSettings =
 lazy val resolverSettings =
   Seq(
     resolvers += Resolver.bintrayRepo("wegtam", "dfasdl"),
-    resolvers += Resolver.bintrayRepo("wegtam", "tensei-data")
+    resolvers += Resolver.bintrayRepo("wegtam", "tensei-data"),
+    resolvers += "maven-restlet" at "http://maven.restlet.org"
   )
 
 lazy val scalafmtSettings =
