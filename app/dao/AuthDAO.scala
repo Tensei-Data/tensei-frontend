@@ -37,7 +37,7 @@ import scala.util.Try
 class AuthDAO @Inject()(override protected val configuration: Configuration,
                         override protected val dbConfigProvider: DatabaseConfigProvider)
     extends Tables(configuration, dbConfigProvider) {
-  import driver.api._
+  import profile.api._
 
   /**
     * Add the given account to the given group.
@@ -119,7 +119,7 @@ class AuthDAO @Inject()(override protected val configuration: Configuration,
     * @return A future holding the number of administrator accounts.
     */
   def countAdministrators: Future[Int] =
-    dbConfig.db.run(accounts.filter(_.isAdmin === true).countDistinct.result)
+    dbConfig.db.run(accounts.filter(_.isAdmin === true).distinct.length.result)
 
   /**
     * Count the members of all groups in the database and return a list of the
@@ -149,7 +149,7 @@ class AuthDAO @Inject()(override protected val configuration: Configuration,
     */
   def countUnlockedAdministrators: Future[Int] =
     dbConfig.db.run(
-      accounts.filter(row => row.isAdmin === true && row.lockedAt.isEmpty).countDistinct.result
+      accounts.filter(row => row.isAdmin === true && row.lockedAt.isEmpty).distinct.length.result
     )
 
   /**

@@ -26,8 +26,8 @@ import com.wegtam.tensei.adt.{ Cookbook, DFASDL }
 import models._
 import play.api.{ Configuration, Logger }
 import play.api.db.slick.{ DatabaseConfigProvider, HasDatabaseConfigProvider }
-import slick.driver.JdbcProfile
-import slick.lifted.{ MappedProjection, ProvenShape }
+import slick.jdbc.JdbcProfile
+import slick.lifted.ProvenShape
 
 import scala.concurrent.duration._
 import scala.language.higherKinds
@@ -45,7 +45,7 @@ import scalaz._
 class Tables @Inject()(protected val configuration: Configuration,
                        protected val dbConfigProvider: DatabaseConfigProvider)
     extends HasDatabaseConfigProvider[JdbcProfile] {
-  import driver.api._
+  import profile.api._
 
   val log = Logger.logger
 
@@ -241,10 +241,7 @@ class Tables @Inject()(protected val configuration: Configuration,
     }
     private val toTuple = (c: Cookbook) => Option((c.id, c.asJson.nospaces))
 
-    def * =
-      ProvenShape.proveShapeOf((id, cookbook) <> (fromTuple, toTuple))(
-        MappedProjection.mappedProjectionShape
-      )
+    def * : ProvenShape[Cookbook] = (id, cookbook) <> (fromTuple, toTuple)
   }
   val cookbooks = TableQuery[CookbooksTable]
 

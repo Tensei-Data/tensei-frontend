@@ -30,7 +30,7 @@ import scala.util.Try
 class AgentRunLogsDAO @Inject()(override protected val configuration: Configuration,
                                 override protected val dbConfigProvider: DatabaseConfigProvider)
     extends Tables(configuration, dbConfigProvider) {
-  import driver.api._
+  import profile.api._
 
   /**
     * A slick table definition for the database table that holds the log entries.

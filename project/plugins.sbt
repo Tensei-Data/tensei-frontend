@@ -1,5 +1,5 @@
 // The official Play plugin which includes a bunch of stuff.
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.12")
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.16")
 // Needed web plugins for the play framework.
 addSbtPlugin("com.typesafe.sbt" % "sbt-coffeescript" % "1.0.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-less"         % "1.1.0")
@@ -15,12 +15,12 @@ addSbtPlugin("org.madoushi.sbt" % "sbt-sass"         % "1.0.0")
 // Other plugins.
 addSbtPlugin("com.eed3si9n"       % "sbt-buildinfo"       % "0.7.0")
 addSbtPlugin("com.typesafe.sbt"   % "sbt-git"             % "0.9.3")
-addSbtPlugin("de.heikoseeberger"  % "sbt-header"          % "2.0.0")
+addSbtPlugin("de.heikoseeberger"  % "sbt-header"          % "3.0.1")
 addSbtPlugin("com.typesafe.sbt"   % "sbt-native-packager" % "1.2.2")
-addSbtPlugin("com.jsuereth"       % "sbt-pgp"             % "1.0.1")
-addSbtPlugin("com.lucidchart"     % "sbt-scalafmt"        % "1.10")
-addSbtPlugin("org.scoverage"      % "sbt-scoverage"       % "1.5.0")
-addSbtPlugin("org.wartremover"    % "sbt-wartremover"     % "2.1.1")
+addSbtPlugin("com.jsuereth"       % "sbt-pgp"             % "1.1.0")
+addSbtPlugin("com.lucidchart"     % "sbt-scalafmt"        % "1.11")
+addSbtPlugin("org.scoverage"      % "sbt-scoverage"       % "1.5.1")
+addSbtPlugin("org.wartremover"    % "sbt-wartremover"     % "2.2.0")
 
 libraryDependencies += "org.slf4j" % "slf4j-nop" % "1.7.25" // Needed by sbt-git
 
