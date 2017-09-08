@@ -37,7 +37,7 @@ class CookbookResourceDAO @Inject()(
     override protected val configuration: Configuration,
     override protected val dbConfigProvider: DatabaseConfigProvider
 ) extends Tables(configuration, dbConfigProvider) {
-  import driver.api._
+  import profile.api._
 
   /**
     * Returns a list of all cookbook resources that are readable

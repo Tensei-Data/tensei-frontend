@@ -35,7 +35,7 @@ import scala.util.Try
 class WorkHistoryDAO @Inject()(override protected val configuration: Configuration,
                                override protected val dbConfigProvider: DatabaseConfigProvider)
     extends Tables(configuration, dbConfigProvider) {
-  import driver.api._
+  import profile.api._
 
   /**
     * Load all entries of the queue history.

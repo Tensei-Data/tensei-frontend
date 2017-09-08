@@ -35,7 +35,7 @@ import scala.util.Try
 class TriggerDAO @Inject()(override protected val configuration: Configuration,
                            override protected val dbConfigProvider: DatabaseConfigProvider)
     extends Tables(configuration, dbConfigProvider) {
-  import driver.api._
+  import profile.api._
 
   /**
     * Return all triggers from the database.

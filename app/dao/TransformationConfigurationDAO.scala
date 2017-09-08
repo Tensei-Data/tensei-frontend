@@ -37,7 +37,7 @@ class TransformationConfigurationDAO @Inject()(
     override protected val configuration: Configuration,
     override protected val dbConfigProvider: DatabaseConfigProvider
 ) extends Tables(configuration, dbConfigProvider) {
-  import driver.api._
+  import profile.api._
 
   /**
     * Helper function to construct a transformation configuration model from

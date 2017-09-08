@@ -36,7 +36,7 @@ import scala.util.Try
 class WorkQueueDAO @Inject()(override protected val configuration: Configuration,
                              override protected val dbConfigProvider: DatabaseConfigProvider)
     extends Tables(configuration, dbConfigProvider) {
-  import driver.api._
+  import profile.api._
 
   /**
     * Load all entries of the transformation configuration queue from the database.
