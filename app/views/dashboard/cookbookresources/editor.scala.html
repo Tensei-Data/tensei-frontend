@@ -251,6 +251,8 @@
                               {{partial 'transformer-settings-split'}}
                             {{else if selectedTransformerIs.TimestampCalibrate}}
                               {{partial 'transformer-settings-timestamp-calibrate'}}
+                            {{else if selectedTransformerIs.TimestampOffsetTransformer}}
+                              {{partial 'transformer-settings-timestamp-offset-transformer'}}
                             {{else}}
                               <p class="alert alert-danger">@Messages("ui.editor.transformer.missingSettingsForm")</p>
                             {{/if}}
@@ -832,6 +834,21 @@
         <tr>
           <td>@Messages("ui.mappings.transformer.timestampCalibrate.perform")</td>
           <td>{{view "select" class="form-control input-sm" content=selectedTransformerOptions.perform.options selection=selectedTransformerOptions.perform.value}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/x-handlebars" data-template-name="_transformer-settings-timestamp-offset-transformer">
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.timestampOffsetTransformer.mode")</td>
+          <td>{{view "select" class="form-control input-sm" content=selectedTransformerOptions.mode.options selection=selectedTransformerOptions.mode.value}}</td>
+        </tr>
+        <tr>
+          <td>@Messages("ui.mappings.transformer.timestampOffsetTransformer.offset")</td>
+          <td>{{view "select" class="form-control input-sm" content=selectedTransformerOptions.offset.options selection=selectedTransformerOptions.offset.value}}</td>
         </tr>
       </tbody>
     </table>
