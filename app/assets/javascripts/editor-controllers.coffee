@@ -492,7 +492,8 @@ Editor.CookbookresourcesMappingsController = Ember.Controller.extend({
       Overwrite: false,
       Replace: false,
       Split: false,
-      TimestampCalibrate: false
+      TimestampCalibrate: false,
+      TimestampOffsetTransformer: false
     }
     t = this.get('selectedTransformer')
     if (t != null)
@@ -669,6 +670,54 @@ Editor.CookbookresourcesMappingsController = Ember.Controller.extend({
         value: null
       }
     },
+    TimestampOffsetTransformer: {
+      mode: {
+        options: ["convert", "keep"],
+        value: null
+      },
+      offset: {
+        options: [
+          "-18:00",
+          "-17:00",
+          "-16:00",
+          "-15:00",
+          "-14:00",
+          "-13:00",
+          "-12:00",
+          "-11:00",
+          "-10:00",
+          "-09:00",
+          "-08:00",
+          "-07:00",
+          "-06:00",
+          "-05:00",
+          "-04:00",
+          "-03:00",
+          "-02:00",
+          "-01:00",
+          "UTC",
+          "+01:00",
+          "+02:00",
+          "+03:00",
+          "+04:00",
+          "+05:00",
+          "+06:00",
+          "+07:00",
+          "+08:00",
+          "+09:00",
+          "+10:00",
+          "+11:00",
+          "+12:00",
+          "+13:00",
+          "+14:00",
+          "+15:00",
+          "+16:00",
+          "+17:00",
+          "+18:00"
+        ],
+        value: "UTC"
+      }
+    },
   },
   availableSourceElementsForDisplay: [],
   sourceElementsDisabled: [],
@@ -677,8 +726,8 @@ Editor.CookbookresourcesMappingsController = Ember.Controller.extend({
   availableMappingKeys: [],
   availableSourceIds: [],
   availableAtomicTransformations: ["", "BoxDataIntoList", "Replace", "TimestampAdjuster"],
-  availableTransformations: ["", "CastStringToLong", "Concat", "DateConverter", "DateTypeConverter", "DateValueToString", "DrupalVanCodeTransformer", "EmptyString", "ExtractBiggestValue", "IDTransformer", "IfThenElseNumeric", "LowerOrUpper", "MergeAndExtractByRegEx", "Nullify", "Overwrite", "Replace", "Split", "TimestampCalibrate"],
-  availableTransformationsClassNames: {"BoxDataIntoList": "com.wegtam.tensei.agent.transformers.atomic.BoxDataIntoList","CastStringToLong": "com.wegtam.tensei.agent.transformers.CastStringToLong", "Concat": "com.wegtam.tensei.agent.transformers.Concat","DateConverter": "com.wegtam.tensei.agent.transformers.DateConverter","DateTypeConverter":"com.wegtam.tensei.agent.transformers.DateTypeConverter", "DateValueToString":"com.wegtam.tensei.agent.transformers.DateValueToString","DrupalVanCodeTransformer":"com.wegtam.tensei.agent.transformers.DrupalVanCodeTransformer","EmptyString":"com.wegtam.tensei.agent.transformers.EmptyString","ExtractBiggestValue": "com.wegtam.tensei.agent.transformers.ExtractBiggestValue","IDTransformer": "com.wegtam.tensei.agent.transformers.IDTransformer","IfThenElseNumeric": "com.wegtam.tensei.agent.transformers.IfThenElseNumeric","LowerOrUpper":"com.wegtam.tensei.agent.transformers.LowerOrUpper","MergeAndExtractByRegEx": "com.wegtam.tensei.agent.transformers.MergeAndExtractByRegEx","Nullify": "com.wegtam.tensei.agent.transformers.Nullify","Overwrite":"com.wegtam.tensei.agent.transformers.Overwrite","Replace": "com.wegtam.tensei.agent.transformers.Replace","Split": "com.wegtam.tensei.agent.transformers.Split","TimestampAdjuster": "com.wegtam.tensei.agent.transformers.atomic.TimestampAdjuster","TimestampCalibrate": "com.wegtam.tensei.agent.transformers.TimestampCalibrate"},
+  availableTransformations: ["", "CastStringToLong", "Concat", "DateConverter", "DateTypeConverter", "DateValueToString", "DrupalVanCodeTransformer", "EmptyString", "ExtractBiggestValue", "IDTransformer", "IfThenElseNumeric", "LowerOrUpper", "MergeAndExtractByRegEx", "Nullify", "Overwrite", "Replace", "Split", "TimestampCalibrate", "TimestampOffsetTransformer"],
+  availableTransformationsClassNames: {"BoxDataIntoList": "com.wegtam.tensei.agent.transformers.atomic.BoxDataIntoList","CastStringToLong": "com.wegtam.tensei.agent.transformers.CastStringToLong", "Concat": "com.wegtam.tensei.agent.transformers.Concat","DateConverter": "com.wegtam.tensei.agent.transformers.DateConverter","DateTypeConverter":"com.wegtam.tensei.agent.transformers.DateTypeConverter", "DateValueToString":"com.wegtam.tensei.agent.transformers.DateValueToString","DrupalVanCodeTransformer":"com.wegtam.tensei.agent.transformers.DrupalVanCodeTransformer","EmptyString":"com.wegtam.tensei.agent.transformers.EmptyString","ExtractBiggestValue": "com.wegtam.tensei.agent.transformers.ExtractBiggestValue","IDTransformer": "com.wegtam.tensei.agent.transformers.IDTransformer","IfThenElseNumeric": "com.wegtam.tensei.agent.transformers.IfThenElseNumeric","LowerOrUpper":"com.wegtam.tensei.agent.transformers.LowerOrUpper","MergeAndExtractByRegEx": "com.wegtam.tensei.agent.transformers.MergeAndExtractByRegEx","Nullify": "com.wegtam.tensei.agent.transformers.Nullify","Overwrite":"com.wegtam.tensei.agent.transformers.Overwrite","Replace": "com.wegtam.tensei.agent.transformers.Replace","Split": "com.wegtam.tensei.agent.transformers.Split","TimestampAdjuster": "com.wegtam.tensei.agent.transformers.atomic.TimestampAdjuster","TimestampCalibrate": "com.wegtam.tensei.agent.transformers.TimestampCalibrate", "TimestampOffsetTransformer": "com.wegtam.tensei.agent.transformers.TimestampOffsetTransformer"},
   availableTypes: [{label: "String", id: "java.lang.String"}, {label: "Integer", id: "java.lang.Integer"}],
   recipes: [],
   selectedMapping: {},
