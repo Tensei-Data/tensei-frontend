@@ -118,6 +118,7 @@ models.ownerId = Owner
 models.account=Account
 models.accounts=Accounts
 models.account.email=E-mail
+models.account.emailConfirm=Confirm the E-mail
 models.account.groups=Groups
 models.account.id=ID
 models.account.mainGroup=Main group

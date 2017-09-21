@@ -23,7 +23,7 @@ import jp.t2v.lab.play2.auth.AuthElement
 import models.Authorities.UserAuthority
 import play.api.Configuration
 import play.api.i18n.{ I18nSupport, MessagesApi }
-import play.api.mvc.Controller
+import play.api.mvc.{ Action, AnyContent, Controller }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -48,7 +48,7 @@ class HelpController @Inject()(
   override def resolveUser(id: Id)(implicit context: ExecutionContext): Future[Option[User]] =
     authDAO.findAccountById(id)
 
-  def intro = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def intro: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     Future.successful(Ok(views.html.dashboard.help.intro()))
   }
 

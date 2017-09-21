@@ -22,9 +22,10 @@ import dao.{ AuthDAO, TransformationConfigurationDAO, WorkQueueDAO }
 import jp.t2v.lab.play2.auth.AuthElement
 import models.Authorities.UserAuthority
 import models.TransformationConfiguration
+import org.slf4j
 import play.api.Logger
 import play.api.i18n.{ I18nSupport, Messages, MessagesApi }
-import play.api.mvc.Controller
+import play.api.mvc.{ Action, AnyContent, Controller }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -49,7 +50,7 @@ class WorkQueueController @Inject()(
     with AuthElement
     with AuthConfigImpl
     with I18nSupport {
-  val log = Logger.logger
+  val log: slf4j.Logger = Logger.logger
 
   /**
     * A function that returns a `User` object from an `Id`.
@@ -68,7 +69,7 @@ class WorkQueueController @Inject()(
     *
     * @return A list of work queue entries.
     */
-  def index = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def index: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     val user = loggedIn
@@ -87,48 +88,49 @@ class WorkQueueController @Inject()(
     * @param uuid The ID of the queue entry.
     * @return Redirect to the work queue list flashing success or failure or display an error.
     */
-  def destroy(uuid: String) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def destroy(uuid: String): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          for {
-            qo <- workQueueDAO.findById(uuid)
-            to <- qo.fold(Future.successful(None: Option[TransformationConfiguration]))(
-              q => transformationConfigurationDAO.findById(q.tkid)
-            )
-            auth <- to.fold(Future.successful(false))(
-              t => authorize(user, t.getExecuteAuthorisation)
-            )
-            result <- qo.fold(
-              Future.successful(
-                NotFound(
-                  views.html.errors.notFound(Messages("errors.notfound.title"),
-                                             Option(Messages("errors.notfound.header")))
-                )
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            for {
+              qo <- workQueueDAO.findById(uuid)
+              to <- qo.fold(Future.successful(None: Option[TransformationConfiguration]))(
+                q => transformationConfigurationDAO.findById(q.tkid)
               )
-            )(
-              q =>
-                workQueueDAO.destroy(q).map { f =>
-                  if (f > 0) {
-                    log.info("Work queue entry {} removed by {}.", uuid, user.email, "") // The last parameter is needed to avoid an "ambiguous reference to overloaded definition" error!
-                    Redirect(routes.WorkQueueController.index()).flashing(
-                      "success" -> Messages("ui.model.deleted", Messages("models.tcqueue.entry"))
-                    )
-                  } else {
-                    Redirect(routes.WorkQueueController.index())
-                      .flashing("error" -> "Could not remove entry.")
-                  }
-              }
-            ) if auth
-          } yield {
-            if (auth)
-              result
-            else
-              Forbidden(views.html.errors.forbidden())
-          }
-      }
+              auth <- to.fold(Future.successful(false))(
+                t => authorize(user, t.getExecuteAuthorisation)
+              )
+              result <- qo.fold(
+                Future.successful(
+                  NotFound(
+                    views.html.errors.notFound(Messages("errors.notfound.title"),
+                                               Option(Messages("errors.notfound.header")))
+                  )
+                )
+              )(
+                q =>
+                  workQueueDAO.destroy(q).map { f =>
+                    if (f > 0) {
+                      log.info("Work queue entry {} removed by {}.", uuid, user.email, "") // The last parameter is needed to avoid an "ambiguous reference to overloaded definition" error!
+                      Redirect(routes.WorkQueueController.index()).flashing(
+                        "success" -> Messages("ui.model.deleted", Messages("models.tcqueue.entry"))
+                      )
+                    } else {
+                      Redirect(routes.WorkQueueController.index())
+                        .flashing("error" -> "Could not remove entry.")
+                    }
+                }
+              ) if auth
+            } yield {
+              if (auth)
+                result
+              else
+                Forbidden(views.html.errors.forbidden())
+            }
+        }
   }
 }

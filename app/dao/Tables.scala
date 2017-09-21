@@ -24,6 +24,7 @@ import argonaut._
 import Argonaut._
 import com.wegtam.tensei.adt.{ Cookbook, DFASDL }
 import models._
+import org.slf4j
 import play.api.{ Configuration, Logger }
 import play.api.db.slick.{ DatabaseConfigProvider, HasDatabaseConfigProvider }
 import slick.jdbc.JdbcProfile
@@ -47,7 +48,7 @@ class Tables @Inject()(protected val configuration: Configuration,
     extends HasDatabaseConfigProvider[JdbcProfile] {
   import profile.api._
 
-  val log = Logger.logger
+  val log: slf4j.Logger = Logger.logger
 
   val DEFAULT_TIMEOUT = 10000L // The fallback default timeout for database operations in milliseconds.
 

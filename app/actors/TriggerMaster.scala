@@ -165,7 +165,16 @@ class TriggerMaster @Inject()(protected val configuration: Configuration,
 }
 
 object TriggerMaster {
-  def props: Props = Props(classOf[TriggerMaster])
+  def props(configuration: Configuration,
+            triggerDAO: TriggerDAO,
+            camelTriggerFactory: CamelTrigger.Factory,
+            completedTriggerFactor: CompletedTrigger.Factory): Props =
+    Props(
+      new TriggerMaster(configuration: Configuration,
+                        triggerDAO: TriggerDAO,
+                        camelTriggerFactory: CamelTrigger.Factory,
+                        completedTriggerFactor: CompletedTrigger.Factory)
+    )
 
   sealed trait TriggerMasterMessages
 

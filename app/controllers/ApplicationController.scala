@@ -62,7 +62,7 @@ class ApplicationController @Inject() (
 
   val DEFAULT_ASK_TIMEOUT = 5000L // The fallback default timeout for `ask` operations in milliseconds.
   private val frontendSelection = system.actorSelection(s"/user/${FrontendService.name}")
-  implicit val timeout = Timeout(FiniteDuration(configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT), MILLISECONDS))
+  implicit val timeout: Timeout = Timeout(FiniteDuration(configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT), MILLISECONDS))
 
   /**
     * A function that returns a `User` object from an `Id`.

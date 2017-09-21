@@ -18,7 +18,7 @@
 package actors
 
 import java.time.ZonedDateTime
-import java.util.Locale
+import java.util.{ Locale, TimeZone }
 import javax.inject.{ Inject, Singleton }
 
 import actors.CronMaster.CronMasterMessages.{ InitializeCrons, UpdateCron }
@@ -50,16 +50,17 @@ class CronMaster @Inject()(configuration: Configuration,
   val DEFAULT_TIMEOUT = 5000L // The fallback default timeout in milliseconds.
   val DEFAULT_DELAY   = 500L  // The fallback default initial delay for the cronjob service.
 
-  val scheduler              = QuartzSchedulerExtension(context.system)
-  val tcQueueMasterSelection = context.system.actorSelection(s"/user/${WorkQueueMaster.name}")
-  implicit val timeout = Timeout(
+  val scheduler = QuartzSchedulerExtension(context.system)
+  val tcQueueMasterSelection: ActorSelection =
+    context.system.actorSelection(s"/user/${WorkQueueMaster.name}")
+  implicit val timeout: Timeout = Timeout(
     FiniteDuration(
       configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_TIMEOUT),
       MILLISECONDS
     )
   )
 
-  val defaultTimezone = java.util.TimeZone.getTimeZone(ZonedDateTime.now().getZone)
+  val defaultTimezone: TimeZone = java.util.TimeZone.getTimeZone(ZonedDateTime.now().getZone)
 
   log.info("CronMaster service started at {}.", self.path)
 
@@ -68,7 +69,7 @@ class CronMaster @Inject()(configuration: Configuration,
     configuration.getMilliseconds("tensei.frontend.cronjobs.init-delay").getOrElse(DEFAULT_DELAY),
     MILLISECONDS
   )
-  val initTimer = context.system.scheduler.scheduleOnce(delay, self, InitializeCrons)
+  val initTimer: Cancellable = context.system.scheduler.scheduleOnce(delay, self, InitializeCrons)
 
   @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   @scala.throws[Exception](classOf[Exception])
@@ -120,6 +121,7 @@ class CronMaster @Inject()(configuration: Configuration,
         if (scheduler.cancelJob(n)) {
           log.debug("Cancelled running cronjob {} ({}).", id, n)
         } else {
+          log.error("Running job with key `{}` could not be cancelled.", key)
           log.warning("Could not cancel running cronjob {} ({})!", id, n)
         }
       }
@@ -159,6 +161,7 @@ class CronMaster @Inject()(configuration: Configuration,
                                                  None,
                                                  defaultTimezone)
                         val entry = WorkQueueEntry.fromCron(cronjob.tkid)
+                        log.debug("Schedule new job for Transformation configuration({})", tk.id)
                         tcQueueMasterSelection
                           .resolveOne()
                           .foreach(
@@ -194,6 +197,7 @@ class CronMaster @Inject()(configuration: Configuration,
                     scheduler
                       .createSchedule(name, cron.description, cron.format, None, defaultTimezone)
                     val entry = WorkQueueEntry.fromCron(cron.tkid)
+                    log.debug("Initialized cron for Transformation configuration({})", tk.id)
                     tcQueueMasterSelection
                       .resolveOne()
                       .foreach(
@@ -207,7 +211,14 @@ class CronMaster @Inject()(configuration: Configuration,
 }
 
 object CronMaster {
-  def props: Props = Props(classOf[CronMaster])
+  def props(configuration: Configuration,
+            cronDAO: CronDAO,
+            transformationConfigurationDAO: TransformationConfigurationDAO): Props =
+    Props(
+      new CronMaster(configuration: Configuration,
+                     cronDAO: CronDAO,
+                     transformationConfigurationDAO: TransformationConfigurationDAO)
+    )
 
   sealed trait CronMasterMessages
 

@@ -38,7 +38,7 @@ object CronForm {
         new CronExpression(formatString)
       } match {
         case Failure(f) => Invalid(Seq(ValidationError(f.getMessage)))
-        case Success(s) => Valid
+        case Success(_) => Valid
       }
   })
 

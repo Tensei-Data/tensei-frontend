@@ -25,5 +25,7 @@ package models
   * @param processors The number of processors.
   */
 case class SystemLoadStats(load: Double, maxLoad: Double, processors: Int) {
-  lazy val loadPercentage = load * 100 / maxLoad
+
+  lazy val loadPercentage: Double = load * 100 / maxLoad
+
 }

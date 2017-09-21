@@ -22,14 +22,14 @@ import javax.inject.{ Inject, Named }
 import actors.websockets.AgentRunLogUpdate
 import actors.websockets.AgentRunLogUpdate.UpdateSocketOptions
 import actors.{ AgentRunLogsFetcher, FrontendService }
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ ActorRef, ActorSelection, ActorSystem }
 import akka.stream.Materializer
 import dao._
 import jp.t2v.lab.play2.auth.AuthElement
 import models.{ Account, TransformationConfiguration }
 import models.Authorities.UserAuthority
 import play.api.i18n.{ I18nSupport, Messages, MessagesApi }
-import play.api.mvc.{ Controller, WebSocket }
+import play.api.mvc.{ Action, AnyContent, Controller, WebSocket }
 import play.api.libs.json._
 import play.api.libs.streams.ActorFlow
 import play.api.mvc.WebSocket.MessageFlowTransformer
@@ -63,7 +63,7 @@ class AgentRunLogsController @Inject()(
     with AuthElement
     with AuthConfigImpl
     with I18nSupport {
-  val frontendSelection = system.actorSelection(s"/user/${FrontendService.name}")
+  val frontendSelection: ActorSelection = system.actorSelection(s"/user/${FrontendService.name}")
 
   /**
     * A function that returns a `User` object from an `Id`.
@@ -79,50 +79,51 @@ class AgentRunLogsController @Inject()(
     * @param uuid The id of a transformation configuration run.
     * @return Either the logs associated with the run or a not found page.
     */
-  def show(uuid: String) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def show(uuid: String): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    for {
-      ho <- workHistoryDAO.findById(uuid)
-      to <- ho.fold(Future.successful(None: Option[TransformationConfiguration]))(
-        h => tcDAO.findById(h.tkid)
-      )
-      auth      <- to.fold(Future.successful(false))(t => authorize(user, t.getReadAuthorisation))
-      ls        <- agentRunLogsDAO.all(uuid) if auth && to.isDefined
-      maxOffset <- agentRunLogsDAO.getMaxOffset(uuid) if auth && to.isDefined
-      startedBy <- ho.fold(Future.successful(None: Option[Account]))(
-        h =>
-          h.user.fold(Future.successful(None: Option[Account]))(id => authDAO.findAccountById(id))
-      ) if auth
-    } yield {
-      ho.fold(
-        NotFound(
-          views.html.errors.notFound(Messages("errors.notfound.title"),
-                                     Option(Messages("errors.notfound.header")))
+      val user = loggedIn
+      for {
+        ho <- workHistoryDAO.findById(uuid)
+        to <- ho.fold(Future.successful(None: Option[TransformationConfiguration]))(
+          h => tcDAO.findById(h.tkid)
         )
-      )(
-        historyEntry =>
-          to.fold(
-            NotFound(
-              views.html.errors.notFound(Messages("errors.notfound.title"),
-                                         Option(Messages("errors.notfound.header")))
-            )
-          ) { tc =>
-            if (auth) {
-              fetcher ! AgentRunLogsFetcher.FetchLogs(uuid, maxOffset)
-              Ok(
-                views.html.dashboard.agentRunLogs
-                  .show(tc.name, startedBy.map(_.email), historyEntry, ls)
+        auth      <- to.fold(Future.successful(false))(t => authorize(user, t.getReadAuthorisation))
+        ls        <- agentRunLogsDAO.all(uuid) if auth && to.isDefined
+        maxOffset <- agentRunLogsDAO.getMaxOffset(uuid) if auth && to.isDefined
+        startedBy <- ho.fold(Future.successful(None: Option[Account]))(
+          h =>
+            h.user.fold(Future.successful(None: Option[Account]))(id => authDAO.findAccountById(id))
+        ) if auth
+      } yield {
+        ho.fold(
+          NotFound(
+            views.html.errors.notFound(Messages("errors.notfound.title"),
+                                       Option(Messages("errors.notfound.header")))
+          )
+        )(
+          historyEntry =>
+            to.fold(
+              NotFound(
+                views.html.errors.notFound(Messages("errors.notfound.title"),
+                                           Option(Messages("errors.notfound.header")))
               )
-            } else
-              Forbidden(views.html.errors.forbidden())
-        }
-      )
-    }
+            ) { tc =>
+              if (auth) {
+                fetcher ! AgentRunLogsFetcher.FetchLogs(uuid, maxOffset)
+                Ok(
+                  views.html.dashboard.agentRunLogs
+                    .show(tc.name, startedBy.map(_.email), historyEntry, ls)
+                )
+              } else
+                Forbidden(views.html.errors.forbidden())
+          }
+        )
+      }
   }
 
-  implicit val webSocketFrameFormatter =
+  implicit val webSocketFrameFormatter: MessageFlowTransformer[UpdateSocketOptions, JsValue] =
     MessageFlowTransformer.jsonMessageFlowTransformer[UpdateSocketOptions, JsValue]
 
   /**
@@ -132,7 +133,7 @@ class AgentRunLogsController @Inject()(
     * @todo Protect with authorisation.
     * @return A websocket.
     */
-  def webSocket = WebSocket.accept[UpdateSocketOptions, JsValue] { request =>
+  def webSocket: WebSocket = WebSocket.accept[UpdateSocketOptions, JsValue] { request =>
     ActorFlow.actorRef(out => AgentRunLogUpdate.props(out, agentRunLogsDAO, fetcher))
   }
 

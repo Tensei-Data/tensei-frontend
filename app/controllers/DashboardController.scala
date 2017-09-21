@@ -23,7 +23,7 @@ import actors.FrontendService.FrontendServiceMessages
 import actors.WorkQueueMaster.WorkQueueMasterMessages
 import actors.websockets.DashboardWebsocket
 import actors.{ FrontendService, WorkQueueMaster }
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSelection, ActorSystem }
 import akka.pattern.ask
 import akka.stream.Materializer
 import akka.util.Timeout
@@ -33,10 +33,11 @@ import helpers.CommonTypeAliases._
 import jp.t2v.lab.play2.auth.AuthElement
 import models.Authorities.UserAuthority
 import models._
+import org.slf4j
 import play.api.i18n.{ I18nSupport, MessagesApi }
 import play.api.libs.json.{ JsObject, JsString, JsValue }
 import play.api.libs.streams.ActorFlow
-import play.api.mvc.{ Controller, WebSocket }
+import play.api.mvc.{ Action, AnyContent, Controller, WebSocket }
 import play.api.{ Configuration, Logger }
 
 import scala.concurrent.duration._
@@ -76,14 +77,14 @@ class DashboardController @Inject()(
     with AuthElement
     with AuthConfigImpl
     with I18nSupport {
-  val log = Logger.logger
+  val log: slf4j.Logger = Logger.logger
 
   val DEFAULT_DB_TIMEOUT    = 10000L  // The fallback default timeout for database operations in milliseconds.
   val DEFAULT_ASK_TIMEOUT   = 5000L   // The fallback default timeout for `ask` operations in milliseconds.
   val DEFAULT_STATS_TIMEOUT = 300000L // The fallback default timeout for generating statistics from the history queue in milliseconds.
 
-  val frontendSelection = system.actorSelection(s"/user/${FrontendService.name}")
-  implicit val timeout = Timeout(
+  val frontendSelection: ActorSelection = system.actorSelection(s"/user/${FrontendService.name}")
+  implicit val timeout: Timeout = Timeout(
     FiniteDuration(
       configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT),
       MILLISECONDS
@@ -100,7 +101,7 @@ class DashboardController @Inject()(
     MILLISECONDS
   )
 
-  val tcQueueMaster = system.actorSelection(s"/user/${WorkQueueMaster.name}")
+  val tcQueueMaster: ActorSelection = system.actorSelection(s"/user/${WorkQueueMaster.name}")
 
   /**
     * A function that returns a `User` object from an `Id`.
@@ -140,7 +141,7 @@ class DashboardController @Inject()(
     *
     * @return The main dashboard or an error page.
     */
-  def index = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def index: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     val user = loggedIn
@@ -159,7 +160,7 @@ class DashboardController @Inject()(
         val stats          = workHistoryDAO.calculateStatistics(uid, user.groupIds)
         for {
           tc  <- transformationConfigurations
-          as  <- fetchAgentInformations.recover { case ex => Map.empty: AgentInformationsData }
+          as  <- fetchAgentInformations.recover { case _ => Map.empty: AgentInformationsData }
           cis <- connectionInformations
           cs  <- cronjobs
           ts  <- triggers
@@ -180,41 +181,42 @@ class DashboardController @Inject()(
     * @param id The database ID of a transformation configuration.
     * @return
     */
-  def enqueue(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def enqueue(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          for {
-            to <- transformationConfigurationDAO.findById(id)
-            auth <- to
-              .fold(Future.successful(false))(t => authorize(user, t.getExecuteAuthorisation))
-          } yield {
-            render {
-              case Accepts.Html() => UnsupportedMediaType("Please use application/json.")
-              case Accepts.Json() =>
-                to.fold(NotFound(JsObject(List("status" -> JsString("404 - Not Found")))))(
-                  t =>
-                    if (auth) {
-                      val e = WorkQueueEntry.fromUser(id, uid)
-                      tcQueueMaster ! WorkQueueMasterMessages.AddToQueue(e)
-                      Ok(
-                        JsObject(
-                          List(
-                            "status" -> JsString(
-                              s"Transformation configuration $id was sent to queue."
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            for {
+              to <- transformationConfigurationDAO.findById(id)
+              auth <- to
+                .fold(Future.successful(false))(t => authorize(user, t.getExecuteAuthorisation))
+            } yield {
+              render {
+                case Accepts.Html() => UnsupportedMediaType("Please use application/json.")
+                case Accepts.Json() =>
+                  to.fold(NotFound(JsObject(List("status" -> JsString("404 - Not Found")))))(
+                    t =>
+                      if (auth) {
+                        val e = WorkQueueEntry.fromUser(id, uid)
+                        tcQueueMaster ! WorkQueueMasterMessages.AddToQueue(e)
+                        Ok(
+                          JsObject(
+                            List(
+                              "status" -> JsString(
+                                s"Transformation configuration ${t.id} was sent to queue."
+                              )
                             )
                           )
                         )
-                      )
-                    } else
-                      Forbidden(JsObject(List("status" -> JsString("403 - Forbidden"))))
-                )
+                      } else
+                        Forbidden(JsObject(List("status" -> JsString("403 - Forbidden"))))
+                  )
+              }
             }
-          }
-      }
+        }
   }
 
   /**
@@ -223,8 +225,8 @@ class DashboardController @Inject()(
     * @param uuid The ID of the history entry.
     * @return The appropriate http status and a message.
     */
-  def stopWorkingQueueEntry(uuid: String) = AsyncStack(AuthorityKey -> UserAuthority) {
-    implicit request =>
+  def stopWorkingQueueEntry(uuid: String): Action[AnyContent] =
+    AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
       import play.api.libs.concurrent.Execution.Implicits._
 
       val user = loggedIn
@@ -267,7 +269,7 @@ class DashboardController @Inject()(
           render {
             case Accepts.Html() => UnsupportedMediaType("Please use application/json.")
             case Accepts.Json() =>
-              ho.fold(NotFound(JsObject(List("status" -> JsString("404 - Not Found"))))) { t =>
+              ho.fold(NotFound(JsObject(List("status" -> JsString("404 - Not Found"))))) { _ =>
                 if (uuids.contains(uuid)) {
                   if (result > 0)
                     Ok(
@@ -285,7 +287,7 @@ class DashboardController @Inject()(
           }
         }
       }
-  }
+    }
 
   /**
     * Create a websocket that will be used to dynamically update informations
@@ -294,7 +296,7 @@ class DashboardController @Inject()(
     * @todo Protect with authorisation.
     * @return A websocket.
     */
-  def webSocket = WebSocket.accept[JsValue, JsValue] { request =>
+  def webSocket: WebSocket = WebSocket.accept[JsValue, JsValue] { request =>
     ActorFlow.actorRef(
       out =>
         DashboardWebsocket.props(configuration,

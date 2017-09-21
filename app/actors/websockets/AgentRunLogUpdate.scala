@@ -70,7 +70,7 @@ object AgentRunLogUpdate {
     * @return The props to create the actor.
     */
   def props(outputActorRef: ActorRef, agentRunLogsDAO: AgentRunLogsDAO, fetcher: ActorRef): Props =
-    Props(classOf[AgentRunLogUpdate], outputActorRef, agentRunLogsDAO, fetcher)
+    Props(new AgentRunLogUpdate(outputActorRef, agentRunLogsDAO, fetcher))
 
   /**
     * The options for the request to the websocket that updates the logs on the page.
@@ -81,6 +81,7 @@ object AgentRunLogUpdate {
   final case class UpdateSocketOptions(uuid: String, offset: Option[Long])
 
   // Use the play json auto format macro.
-  implicit val updateSocketOptionsFormat = Json.format[UpdateSocketOptions]
+  implicit val updateSocketOptionsFormat: OFormat[UpdateSocketOptions] =
+    Json.format[UpdateSocketOptions]
 
 }

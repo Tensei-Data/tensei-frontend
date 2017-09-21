@@ -76,29 +76,12 @@ class DashboardWebsocket(
       .getOrElse(DEFAULT_AGENT_INTERVAL),
     MILLISECONDS
   )
-  private val queuePollingIntervall = FiniteDuration(
-    configuration
-      .getMilliseconds("tensei.frontend.queue-polling-interval")
-      .getOrElse(DEFAULT_QUEUE_INTERVAL),
-    MILLISECONDS
-  )
-  private val askTimeout = FiniteDuration(
-    configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_TIMEOUT),
-    MILLISECONDS
-  )
 
   private val agentInformationScheduler = context.system.scheduler.schedule(
     FiniteDuration(50, MILLISECONDS),
     infoPollingInterval,
     self,
     DashboardWebsocketMessages.PollAgentsInformations
-  )
-
-  private val queueInformationsScheduler = context.system.scheduler.schedule(
-    queuePollingIntervall,
-    queuePollingIntervall,
-    self,
-    DashboardWebsocketMessages.PollQueueInformations
   )
 
   type TCQueueHistoryType = (String,
@@ -392,7 +375,7 @@ class DashboardWebsocket(
     * @return A future holding the agent informations.
     */
   private def loadAgentsInformations: Future[AgentInformationsData] = {
-    implicit val timeout = Timeout(DEFAULT_TIMEOUT, MILLISECONDS)
+    implicit val timeout: Timeout = Timeout(DEFAULT_TIMEOUT, MILLISECONDS)
     val getAgentInfo = (frontendSelection ? FrontendServiceMessages.AgentsInformations(None))
       .mapTo[FrontendServiceMessages]
     getAgentInfo.map {

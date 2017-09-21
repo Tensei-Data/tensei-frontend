@@ -69,7 +69,7 @@ class AdministrationController @Inject() (
   private val DEFAULT_ASK_TIMEOUT = 5000L // The fallback default timeout for `ask` operations in milliseconds.
 
   private val frontendSelection = system.actorSelection(s"/user/${FrontendService.name}")
-  implicit val timeout = Timeout(FiniteDuration(configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT), MILLISECONDS))
+  implicit val timeout: Timeout = Timeout(FiniteDuration(configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT), MILLISECONDS))
   lazy val dbTimeout = FiniteDuration(configuration.getMilliseconds("tensei.frontend.db-timeout").getOrElse(DEFAULT_DB_TIMEOUT), MILLISECONDS)
 
   /**
@@ -188,7 +188,7 @@ class AdministrationController @Inject() (
                         case scala.util.Failure(e) ⇒
                           log.error("Could not create account!", e)
                           Redirect(routes.AdministrationController.accounts()).flashing("error" → "Could not create account!")
-                        case scala.util.Success(a) ⇒
+                        case scala.util.Success(_) ⇒
                           Redirect(routes.AdministrationController.accounts()).flashing("success" → "Created account...")
                       }
                     }
@@ -225,10 +225,10 @@ class AdministrationController @Inject() (
                     Redirect(routes.AdministrationController.groups()).flashing("error" → "Could not create group!")
                   case scala.util.Success(r) ⇒ r.id.fold(
                     Redirect(routes.AdministrationController.groups()).flashing("error" → "Could not create group!")
-                  )(id ⇒ Redirect(routes.AdministrationController.groups()).flashing("success" → "Created group."))
+                  )(_ ⇒ Redirect(routes.AdministrationController.groups()).flashing("success" → "Created group."))
                 }
               } {
-                g ⇒ Future.successful(BadRequest(views.html.dashboard.groups.add(AccountForms.groupForm.fill(formData).withError("name", "Group name exists!"))))
+                g ⇒ Future.successful(BadRequest(views.html.dashboard.groups.add(AccountForms.groupForm.fill(formData).withError("name", s"Group name already exists! `${g.name}`"))))
               }
             } yield result
           )
@@ -255,7 +255,7 @@ class AdministrationController @Inject() (
               else
                 for {
                   activeAdmins ← authDAO.countUnlockedAdministrators
-                  r ← if (activeAdmins > 1) authDAO.destroyAccount(a).map(i ⇒ Redirect(routes.AdministrationController.accounts()).flashing("success" → Messages("ui.model.deleted", Messages("models.account")))) else Future.successful(Redirect(routes.AdministrationController.accounts()).flashing("error" → Messages("ui.account.oneAdminDelete")))
+                  r ← if (activeAdmins > 1) authDAO.destroyAccount(a).map(_ ⇒ Redirect(routes.AdministrationController.accounts()).flashing("success" → Messages("ui.model.deleted", Messages("models.account")))) else Future.successful(Redirect(routes.AdministrationController.accounts()).flashing("error" → Messages("ui.account.oneAdminDelete")))
                 } yield r
           )
       )
@@ -465,23 +465,19 @@ class AdministrationController @Inject() (
 
       CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
         implicit token ⇒
-          val definedUsers = authDAO.countAccounts
-          val numberOfAllowedUsers: Future[TenseiLicenseMessages] = (frontendSelection ? TenseiLicenseMessages.ReportAllowedNumberOfUsers).mapTo[TenseiLicenseMessages]
           val account = authDAO.findAccountById(id)
           for {
-            count ← definedUsers
-            na ← numberOfAllowedUsers
             ac ← account
             result ← ac.fold(Future.successful(NotFound(views.html.errors.notFound(Messages("errors.notfound.title"), Option(Messages("errors.notfound.account"))))))(
               a ⇒
                 a.id.fold(Future.successful(NotFound(views.html.errors.notFound(Messages("errors.notfound.title"), Option(Messages("errors.notfound.account")))))) {
-                  aid ⇒
+                  _ ⇒
                     if (loggedIn.isAdmin && loggedIn.id != a.id)
                       AccountForms.adminForm.bindFromRequest().fold(
                         formWithErrors ⇒ Future.successful(BadRequest(views.html.dashboard.accounts.editAdmin(id, formWithErrors))),
                         formData ⇒ {
                           val updatedA = a.copy(email = formData.email._1, isAdmin = formData.isAdmin)
-                          authDAO.updateAccount(updatedA).map(i ⇒ Redirect(routes.AdministrationController.accounts()).flashing("success" → "Updated account."))
+                          authDAO.updateAccount(updatedA).map(_ ⇒ Redirect(routes.AdministrationController.accounts()).flashing("success" → "Updated account."))
                         }
                       )
                     else
@@ -489,7 +485,7 @@ class AdministrationController @Inject() (
                         formWithErrors ⇒ Future.successful(BadRequest(views.html.dashboard.accounts.edit(id, formWithErrors))),
                         formData ⇒ {
                           val updatedA = a.copy(email = formData.email._1)
-                          authDAO.updateAccount(updatedA).map(i ⇒ Redirect(routes.AdministrationController.accounts()).flashing("success" → "Updated account."))
+                          authDAO.updateAccount(updatedA).map(_ ⇒ Redirect(routes.AdministrationController.accounts()).flashing("success" → "Updated account."))
                         }
                       )
                 }

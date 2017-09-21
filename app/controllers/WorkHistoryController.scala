@@ -24,7 +24,7 @@ import models.Authorities.UserAuthority
 import models.WorkHistoryStatistics
 import play.api.Configuration
 import play.api.i18n.{ I18nSupport, MessagesApi }
-import play.api.mvc.Controller
+import play.api.mvc.{ Action, AnyContent, Controller }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -48,7 +48,8 @@ class WorkHistoryController @Inject()(
     with AuthConfigImpl
     with I18nSupport {
   // The number of history entries that should be loaded per page.
-  val entriesPerPage = configuration.getInt("tensei.frontend.ui.queue-hist-per-page").getOrElse(30)
+  val entriesPerPage: Int =
+    configuration.getInt("tensei.frontend.ui.queue-hist-per-page").getOrElse(30)
 
   /**
     * A function that returns a `User` object from an `Id`.
@@ -67,32 +68,33 @@ class WorkHistoryController @Inject()(
     * @param page Used for paginating the history.
     * @return The history entries readable by the current user according to the given page.
     */
-  def index(page: Int) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def index(page: Int): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          val getCount = workHistoryDAO.countReadable(uid, user.groupIds)
-          val skip     = page * entriesPerPage
-          for {
-            cnt    <- getCount
-            hs     <- workHistoryDAO.allReadableWithLimits(uid, user.groupIds)(skip, entriesPerPage)
-            stats  <- workHistoryDAO.calculateStatistics(uid, user.groupIds)
-            tStats <- WorkHistoryStatistics.translateStats(stats)
-          } yield {
-            val maxPages = {
-              val rest   = cnt % entriesPerPage
-              val rawCnt = cnt / entriesPerPage
-              if (rest > 0 && rawCnt > 1)
-                rawCnt + 1
-              else
-                rawCnt
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            val getCount = workHistoryDAO.countReadable(uid, user.groupIds)
+            val skip     = page * entriesPerPage
+            for {
+              cnt    <- getCount
+              hs     <- workHistoryDAO.allReadableWithLimits(uid, user.groupIds)(skip, entriesPerPage)
+              stats  <- workHistoryDAO.calculateStatistics(uid, user.groupIds)
+              tStats <- WorkHistoryStatistics.translateStats(stats)
+            } yield {
+              val maxPages = {
+                val rest   = cnt % entriesPerPage
+                val rawCnt = cnt / entriesPerPage
+                if (rest > 0 && rawCnt > 1)
+                  rawCnt + 1
+                else
+                  rawCnt
+              }
+              Ok(views.html.dashboard.workHistory.index(hs, maxPages, page, tStats))
             }
-            Ok(views.html.dashboard.workHistory.index(hs, maxPages, page, tStats))
-          }
-      }
+        }
   }
 
 }

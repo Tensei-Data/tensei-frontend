@@ -43,7 +43,7 @@ object ConnectionInformationResourceForm {
       new URI(uriString)
     } match {
       case Failure(f) => Seq(ValidationError(f.getMessage))
-      case Success(s) => Nil
+      case Success(_) => Nil
     }
     if (errors.isEmpty)
       Valid

@@ -207,7 +207,7 @@ class AuthDAO @Inject()(override protected val configuration: Configuration,
     for {
       ao <- dbConfig.db.run(accounts.filter(_.id === id).result.headOption)
       gs <- ao.fold(Future.successful(Seq.empty[Int]))(
-        a => dbConfig.db.run(accountsGroups.filter(_.accountId === id).map(_.groupId).result)
+        _ => dbConfig.db.run(accountsGroups.filter(_.accountId === id).map(_.groupId).result)
       )
     } yield ao.fold(None: Option[Account])(a => Option(a.copy(groupIds = gs.toSet)))
 
@@ -326,7 +326,7 @@ class AuthDAO @Inject()(override protected val configuration: Configuration,
               .map(row => (row.lockedAt, row.unlockToken))
               .update((None, None))
           )
-          .flatMap(r => findAccountById(id))
+          .flatMap(_ => findAccountById(id))
     )
   }
 
@@ -349,7 +349,7 @@ class AuthDAO @Inject()(override protected val configuration: Configuration,
             .map(row => (row.password, row.lockedAt, row.unlockToken))
             .update((hashedPassword, None, None))
         )
-        .flatMap(r => findAccountById(id))
+        .flatMap(_ => findAccountById(id))
     }
   }
 
