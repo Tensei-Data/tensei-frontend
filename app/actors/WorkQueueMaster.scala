@@ -83,7 +83,7 @@ class WorkQueueMaster @Inject()(
       log.debug("Reached queue starting timer.")
       val _ = startNextEntry(data)
       stay() using WorkQueueMasterData()
-    case Event(WorkQueueMasterMessages.AddToQueue(entry), data) =>
+    case Event(WorkQueueMasterMessages.AddToQueue(entry), _) =>
       log.debug("Received add to queue request {}.", entry)
       val mySelf = self
       val _ = for {
@@ -108,7 +108,7 @@ class WorkQueueMaster @Inject()(
 
   when(WorkQueueMasterState.Watching, stateTimeout = startingTimeout) {
     case Event(ServerMessages.StartTransformationConfigurationResponse(message, uniqueIdentifier),
-               data) =>
+               _) =>
       log.info("Got response from server for queue starting one entry: {}", message)
       message match {
         case -\/(error) =>
@@ -117,10 +117,13 @@ class WorkQueueMaster @Inject()(
           goto(WorkQueueMasterState.Idle) using WorkQueueMasterData()
         case \/-(status) =>
           // Remove the agent from the active queue
+          log.debug("Removed agent with identifier `{}` and status `{}` from queue.",
+                    uniqueIdentifier,
+                    status)
           uniqueIdentifier.foreach(uuid => workQueueDAO.destroy(uuid))
           goto(WorkQueueMasterState.Idle) using WorkQueueMasterData()
       }
-    case Event(StateTimeout, data) =>
+    case Event(StateTimeout, _) =>
       log.info("Queue starting timeout fired.")
       goto(WorkQueueMasterState.Idle) using WorkQueueMasterData()
     case msg =>
@@ -239,7 +242,22 @@ class WorkQueueMaster @Inject()(
 }
 
 object WorkQueueMaster {
-  def props: Props = Props(classOf[WorkQueueMaster])
+  def props(workQueueDAO: WorkQueueDAO,
+            workHistoryDAO: WorkHistoryDAO,
+            connectionInformationDAO: ConnectionInformationResourceDAO,
+            cookbookResourceDAO: CookbookResourceDAO,
+            dfasdlResourceDAO: DFASDLResourceDAO,
+            transformationConfigurationDAO: TransformationConfigurationDAO): Props =
+    Props(
+      new WorkQueueMaster(
+        workQueueDAO: WorkQueueDAO,
+        workHistoryDAO: WorkHistoryDAO,
+        connectionInformationDAO: ConnectionInformationResourceDAO,
+        cookbookResourceDAO: CookbookResourceDAO,
+        dfasdlResourceDAO: DFASDLResourceDAO,
+        transformationConfigurationDAO: TransformationConfigurationDAO
+      )
+    )
 
   sealed trait WorkQueueMasterState
 

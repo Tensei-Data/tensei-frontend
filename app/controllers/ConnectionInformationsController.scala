@@ -28,7 +28,6 @@ import play.api.data.Forms._
 import play.api.i18n.{ I18nSupport, Messages, MessagesApi }
 import play.api.libs.json.Json
 import play.api.mvc.{ Action, AnyContent, Controller }
-import argonaut.Argonaut._
 import forms.{ ConnectionInformationResourceForm, ResourceAuthorisationFieldsForm }
 import models.Authorities.UserAuthority
 import play.filters.csrf.CSRF
@@ -146,8 +145,7 @@ class ConnectionInformationsController @Inject()(
       )
       val suggestions: List[String] =
         autocompleteUriForm.bindFromRequest.fold(
-          formWithErrors =>
-            List("file://", "jdbc:", "http://", "https://", "sftp://", "ftp://", "smb://"),
+          _ => List("file://", "jdbc:", "http://", "https://", "sftp://", "ftp://", "smb://"),
           uri =>
             if (uri.isEmpty)
               List("file://", "jdbc:", "http://", "https://", "sftp://", "ftp://", "smb://")
@@ -442,7 +440,7 @@ class ConnectionInformationsController @Inject()(
                         connectionInformationResourceDAO
                           .update(r)
                           .map(
-                            f =>
+                            _ =>
                               c.id
                                 .fold(
                                   InternalServerError(views.html.dashboard.errors.serverError())

@@ -84,7 +84,8 @@ class AgentRunLogsFetcher @Inject()(val agentRunLogsDAO: AgentRunLogsDAO,
 
 object AgentRunLogsFetcher {
 
-  def props: Props = Props(classOf[AgentRunLogsFetcher])
+  def props(agentRunLogsDAO: AgentRunLogsDAO, configuration: Configuration): Props =
+    Props(new AgentRunLogsFetcher(agentRunLogsDAO: AgentRunLogsDAO, configuration: Configuration))
 
   /**
     * Instruct the actor to fetch the logs for the given uuid.

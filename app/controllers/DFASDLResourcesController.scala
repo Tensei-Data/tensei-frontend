@@ -78,7 +78,7 @@ class DFASDLResourcesController @Inject()(
   private val log = Logger.logger
 
   private val frontendSelection = system.actorSelection(s"/user/${FrontendService.name}")
-  implicit val timeout = Timeout(
+  implicit val timeout: Timeout = Timeout(
     FiniteDuration(
       configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT),
       MILLISECONDS
@@ -182,7 +182,7 @@ class DFASDLResourcesController @Inject()(
                     .map(
                       o =>
                         o.fold(Success(resource): Validation[Result, DFASDLResource])(
-                          d =>
+                          _ =>
                             Failure(
                               BadRequest(
                                 views.html.dashboard.dfasdlresources
@@ -274,7 +274,7 @@ class DFASDLResourcesController @Inject()(
                   )
                 else
                   Redirect(routes.DFASDLResourcesController.index())
-                    .flashing("error" -> "No entry was deleted.")
+                    .flashing("error" -> s"No entry was deleted from `${r.dfasdl.id}`.")
               }
             }
         }
@@ -651,7 +651,7 @@ class DFASDLResourcesController @Inject()(
                                            Option(Messages("errors.notfound.header")))
               )
             )(
-              c => result
+              _ => result
             )
           } else
             Forbidden(views.html.errors.forbidden())
@@ -780,7 +780,7 @@ class DFASDLResourcesController @Inject()(
                                                      Option(Messages("errors.notfound.header")))
                         )
                       )(
-                        c => result
+                        _ => result
                       )
                     } else
                       Forbidden(views.html.errors.forbidden())
@@ -875,13 +875,13 @@ class DFASDLResourcesController @Inject()(
               render {
                 case Accepts.Html() =>
                   if (auth)
-                    ro.fold(NotFound(""))(r => Ok(versions.mkString(",")))
+                    ro.fold(NotFound(""))(_ => Ok(versions.mkString(",")))
                   else
                     Forbidden(views.html.errors.forbidden())
                 case Accepts.Json() =>
                   if (auth)
                     ro.fold(NotFound("").as("application/json"))(
-                      r => Ok(versions.toList.asJson.nospaces).as("application/json")
+                      _ => Ok(versions.toList.asJson.nospaces).as("application/json")
                     )
                   else
                     Forbidden("").as("application/json")

@@ -24,7 +24,7 @@ package models
   * @param free           The amount of free memory.
   */
 case class MemoryStats(total: Long, free: Long) {
-  lazy val freePercentage = 100 - usedPercentage
+  lazy val freePercentage: Double = 100 - usedPercentage
 
-  lazy val usedPercentage = (total - free).toDouble * 100 / total.toDouble
+  lazy val usedPercentage: Double = (total - free).toDouble * 100 / total.toDouble
 }

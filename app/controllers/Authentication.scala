@@ -23,9 +23,10 @@ import dao.AuthDAO
 import forms.{ LoginForm, SetupForm, UnlockForm }
 import jp.t2v.lab.play2.auth.LoginLogout
 import models.Account
+import org.slf4j
 import play.api.{ Configuration, Logger }
 import play.api.i18n.{ I18nSupport, Messages, MessagesApi }
-import play.api.mvc.{ Action, Controller }
+import play.api.mvc.{ Action, AnyContent, Controller }
 import play.filters.csrf.CSRF
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -49,7 +50,7 @@ class Authentication @Inject()(
     with LoginLogout
     with AuthConfigImpl {
 
-  val log = Logger.logger
+  val log: slf4j.Logger = Logger.logger
 
   /**
     * A function that returns a `User` object from an `Id`.
@@ -65,7 +66,7 @@ class Authentication @Inject()(
     *
     * @return A future holding either a redirect or an error.
     */
-  def authenticate = Action.async { implicit request =>
+  def authenticate: Action[AnyContent] = Action.async { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden())))(
@@ -82,7 +83,7 @@ class Authentication @Inject()(
                   authDAO
                     .incrementFailedLoginAttempts(formData.email)
                     .map(
-                      inc =>
+                      _ =>
                         BadRequest(
                           views.html.login(
                             LoginForm.form
@@ -110,7 +111,7 @@ class Authentication @Inject()(
     *
     * @return Redirect to the start page or return a bad request.
     */
-  def createAdminAccount = Action.async { implicit request =>
+  def createAdminAccount: Action[AnyContent] = Action.async { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden())))(
@@ -171,7 +172,7 @@ class Authentication @Inject()(
     *
     * @return The login form.
     */
-  def login = Action.async { implicit request =>
+  def login: Action[AnyContent] = Action.async { implicit request =>
     CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden())))(
       implicit token => Future.successful(Ok(views.html.login(LoginForm.form)))
     )
@@ -182,7 +183,7 @@ class Authentication @Inject()(
     *
     * @return The result of `AuthConfigImpl.gotoLogoutSucceeded` with a flashing message.
     */
-  def logout = Action.async { implicit request =>
+  def logout: Action[AnyContent] = Action.async { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden())))(
@@ -196,7 +197,7 @@ class Authentication @Inject()(
     *
     * @return Either the html form or a redirect with a flashing error message.
     */
-  def setup = Action.async { implicit request =>
+  def setup: Action[AnyContent] = Action.async { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden())))(
@@ -217,7 +218,7 @@ class Authentication @Inject()(
     *
     * @return Either redirect the user to the login page or give a bad request if an error occured.
     */
-  def unlockUser = Action.async { implicit request =>
+  def unlockUser: Action[AnyContent] = Action.async { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden())))(
@@ -242,7 +243,7 @@ class Authentication @Inject()(
                         authDAO
                           .unlockAccountAndSetPassword(a.copy(password = formData.password._1))
                           .map(
-                            o =>
+                            _ =>
                               Redirect(routes.Authentication.login())
                                 .flashing("success" -> Messages("unlock.success"))
                         )

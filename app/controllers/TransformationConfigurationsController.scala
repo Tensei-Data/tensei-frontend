@@ -18,7 +18,7 @@
 package controllers
 
 import actors.FrontendService
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSelection, ActorSystem }
 import akka.pattern.ask
 import akka.util.Timeout
 import argonaut.Argonaut._
@@ -31,8 +31,9 @@ import jp.t2v.lab.play2.auth.AuthElement
 import models.Authorities.UserAuthority
 import models._
 import org.dfasdl.utils.{ DocumentHelpers, ElementHelpers }
+import org.slf4j
 import play.api.i18n.{ I18nSupport, Messages, MessagesApi }
-import play.api.mvc.{ Controller, Result }
+import play.api.mvc.{ Action, AnyContent, Controller, Result }
 import play.api.{ Configuration, Logger }
 import play.filters.csrf.CSRF
 
@@ -76,10 +77,10 @@ class TransformationConfigurationsController @Inject()(
   val DEFAULT_DB_TIMEOUT  = 10000L // The fallback default timeout for database operations in milliseconds.
   val DEFAULT_ASK_TIMEOUT = 5000L  // The fallback default timeout for `ask` operations in milliseconds.
 
-  val log = Logger.logger
+  val log: slf4j.Logger = Logger.logger
 
-  val frontendSelection = system.actorSelection(s"/user/${FrontendService.name}")
-  implicit val timeout = Timeout(
+  val frontendSelection: ActorSelection = system.actorSelection(s"/user/${FrontendService.name}")
+  implicit val timeout: Timeout = Timeout(
     FiniteDuration(
       configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT),
       MILLISECONDS
@@ -127,7 +128,7 @@ class TransformationConfigurationsController @Inject()(
     *
     * @return The form for adding a new transformation configuration or an error page.
     */
-  def add = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def add: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     val user = loggedIn
@@ -185,7 +186,7 @@ class TransformationConfigurationsController @Inject()(
     *
     * @return Redirect to the detail page or display an error.
     */
-  def create = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def create: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
@@ -246,7 +247,9 @@ class TransformationConfigurationsController @Inject()(
                 }
               )
             cbo <- check match {
-              case Failure(f) => Future.successful(None: Option[CookbookResource])
+              case Failure(f) =>
+                log.error("Failure within cookbook resource.", f)
+                Future.successful(None: Option[CookbookResource])
               case Success(s) =>
                 cookbookResourceDAO.findById(s.cookbookResourceId)(loadCookbook = true)
             }
@@ -311,44 +314,47 @@ class TransformationConfigurationsController @Inject()(
     * @param id The database id of a transformation configuration.
     * @return Redirect to the index page flashing success or failure or an error page.
     */
-  def destroy(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def destroy(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          for {
-            to   <- transformationConfigurationDAO.findById(id)
-            auth <- to.fold(Future.successful(false))(t => authorize(user, t.getWriteAuthorisation))
-            result <- to.fold(
-              Future.successful(
-                NotFound(
-                  views.html.errors.notFound(Messages("errors.notfound.title"),
-                                             Option(Messages("errors.notfound.header")))
-                )
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          _ =>
+            for {
+              to <- transformationConfigurationDAO.findById(id)
+              auth <- to.fold(Future.successful(false))(
+                t => authorize(user, t.getWriteAuthorisation)
               )
-            )(
-              t =>
-                transformationConfigurationDAO
-                  .destroy(t)
-                  .map(
-                    f =>
-                      if (f > 0)
-                        Redirect(routes.TransformationConfigurationsController.index())
-                          .flashing("success" -> "Transformation configuration deleted.")
-                      else
-                        Redirect(routes.TransformationConfigurationsController.index())
-                          .flashing("error" -> "Could not delete transformation configuration!.")
+              result <- to.fold(
+                Future.successful(
+                  NotFound(
+                    views.html.errors.notFound(Messages("errors.notfound.title"),
+                                               Option(Messages("errors.notfound.header")))
+                  )
                 )
-            ) if auth
-          } yield {
-            if (auth)
-              result
-            else
-              Forbidden(views.html.errors.forbidden())
-          }
-      }
+              )(
+                t =>
+                  transformationConfigurationDAO
+                    .destroy(t)
+                    .map(
+                      f =>
+                        if (f > 0)
+                          Redirect(routes.TransformationConfigurationsController.index())
+                            .flashing("success" -> "Transformation configuration deleted.")
+                        else
+                          Redirect(routes.TransformationConfigurationsController.index())
+                            .flashing("error" -> s"Could not delete transformation configuration!.")
+                  )
+              ) if auth
+            } yield {
+              if (auth)
+                result
+              else
+                Forbidden(views.html.errors.forbidden())
+            }
+        }
   }
 
   /**
@@ -357,82 +363,85 @@ class TransformationConfigurationsController @Inject()(
     * @param id The database id of the transformation configuration.
     * @return The form or an error page.
     */
-  def edit(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def edit(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          val getConnections = connectionInformationResourceDAO.allReadable(uid, user.groupIds)
-          val getCookbooks =
-            cookbookResourceDAO.allReadable(uid, user.groupIds)(loadCookbooks = false)
-          val getGroups                    = authDAO.allGroups
-          val getUsers                     = authDAO.allUsernames
-          val getTransformationConfigsSize = transformationConfigurationDAO.count
-          for {
-            to   <- transformationConfigurationDAO.findById(id)
-            auth <- to.fold(Future.successful(false))(t => authorize(user, t.getWriteAuthorisation))
-            dfasdls <- to.fold(Future.successful(Seq.empty[DFASDLResource]))(
-              t =>
-                dfasdlResourceDAO.findByIds(
-                  t.sourceConnections.map(_.dfasdlId).toSet + t.targetConnection.dfasdlId
-                )(loadDfasdl = true)
-            )
-            dfasdlIdMappings <- Future.successful(
-              dfasdls.flatMap(d => d.id.map(id => id.toString -> d.dfasdl.id)).toMap
-            )
-            as  <- getUsers if auth
-            gs  <- getGroups if auth
-            cis <- getConnections if auth
-            cbs <- getCookbooks if auth
-            cnt <- getTransformationConfigsSize
-            max <- getNumberOfAllowedConfigurations
-          } yield {
-            if (auth) {
-              to.fold(
-                NotFound(
-                  views.html.errors.notFound(Messages("errors.notfound.title"),
-                                             Option(Messages("errors.notfound.header")))
-                )
-              ) { t =>
-                val authorisation = ResourceAuthorisationFieldsForm.Data(
-                  ownerId = t.ownerId,
-                  groupId = t.groupId,
-                  groupPermissions = t.groupPermissions,
-                  worldPermissions = t.worldPermissions
-                )
-                val td = TransformationConfigurationForm.Data(
-                  name = t.name,
-                  cookbookResourceId = t.cookbook.id.get,
-                  sources = t.sourceConnections.toList,
-                  target = t.targetConnection,
-                  authorisation = authorisation
-                )
-                val formData =
-                  if (t.dirty)
-                    td.copy(cookbookResourceId = 0L,
-                            sources = List.empty,
-                            target =
-                              DfasdlConnectionMapping(dfasdlId = 0L, connectionInformationId = 0L))
-                  else td
-                Ok(
-                  views.html.dashboard.transformationconfigurations.edit(
-                    id,
-                    TransformationConfigurationForm.form.fill(formData),
-                    canSave = cnt < max.getOrElse(0),
-                    cis,
-                    cbs,
-                    dfasdlIdMappings,
-                    gs,
-                    as
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            val getConnections = connectionInformationResourceDAO.allReadable(uid, user.groupIds)
+            val getCookbooks =
+              cookbookResourceDAO.allReadable(uid, user.groupIds)(loadCookbooks = false)
+            val getGroups                    = authDAO.allGroups
+            val getUsers                     = authDAO.allUsernames
+            val getTransformationConfigsSize = transformationConfigurationDAO.count
+            for {
+              to <- transformationConfigurationDAO.findById(id)
+              auth <- to.fold(Future.successful(false))(
+                t => authorize(user, t.getWriteAuthorisation)
+              )
+              dfasdls <- to.fold(Future.successful(Seq.empty[DFASDLResource]))(
+                t =>
+                  dfasdlResourceDAO.findByIds(
+                    t.sourceConnections.map(_.dfasdlId).toSet + t.targetConnection.dfasdlId
+                  )(loadDfasdl = true)
+              )
+              dfasdlIdMappings <- Future.successful(
+                dfasdls.flatMap(d => d.id.map(id => id.toString -> d.dfasdl.id)).toMap
+              )
+              as  <- getUsers if auth
+              gs  <- getGroups if auth
+              cis <- getConnections if auth
+              cbs <- getCookbooks if auth
+              cnt <- getTransformationConfigsSize
+              max <- getNumberOfAllowedConfigurations
+            } yield {
+              if (auth) {
+                to.fold(
+                  NotFound(
+                    views.html.errors.notFound(Messages("errors.notfound.title"),
+                                               Option(Messages("errors.notfound.header")))
                   )
-                )
-              }
-            } else
-              Forbidden(views.html.errors.forbidden())
-          }
-      }
+                ) { t =>
+                  val authorisation = ResourceAuthorisationFieldsForm.Data(
+                    ownerId = t.ownerId,
+                    groupId = t.groupId,
+                    groupPermissions = t.groupPermissions,
+                    worldPermissions = t.worldPermissions
+                  )
+                  val td = TransformationConfigurationForm.Data(
+                    name = t.name,
+                    cookbookResourceId = t.cookbook.id.get,
+                    sources = t.sourceConnections.toList,
+                    target = t.targetConnection,
+                    authorisation = authorisation
+                  )
+                  val formData =
+                    if (t.dirty)
+                      td.copy(cookbookResourceId = 0L,
+                              sources = List.empty,
+                              target = DfasdlConnectionMapping(dfasdlId = 0L,
+                                                               connectionInformationId = 0L))
+                    else td
+                  Ok(
+                    views.html.dashboard.transformationconfigurations.edit(
+                      id,
+                      TransformationConfigurationForm.form.fill(formData),
+                      canSave = cnt < max.getOrElse(0),
+                      cis,
+                      cbs,
+                      dfasdlIdMappings,
+                      gs,
+                      as
+                    )
+                  )
+                }
+              } else
+                Forbidden(views.html.errors.forbidden())
+            }
+        }
   }
 
   /**
@@ -442,8 +451,8 @@ class TransformationConfigurationsController @Inject()(
     * @param cookbookId The id of the cookbook that is selected.
     * @return JSON data for the on page javascript that is used to update the form.
     */
-  def generateFormData(cookbookId: Long) = AsyncStack(AuthorityKey -> UserAuthority) {
-    implicit request =>
+  def generateFormData(cookbookId: Long): Action[AnyContent] =
+    AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
       import play.api.libs.concurrent.Execution.Implicits._
 
       val user = loggedIn
@@ -474,6 +483,8 @@ class TransformationConfigurationsController @Inject()(
                     c.id.fold(
                       InternalServerError("An unexpected error occured!").as("application/json")
                     ) { cid =>
+                      log.debug("Collecting source Dfasdl mappings for cookbook resource ID {}",
+                                cid)
                       val sourceMappings = c.cookbook.sources.flatMap { d =>
                         dfasdls
                           .find(_.dfasdl.id == d.id)
@@ -543,14 +554,14 @@ class TransformationConfigurationsController @Inject()(
           }
         }
       }
-  }
+    }
 
   /**
     * List all transformation configurations readable by the user.
     *
     * @return A list of transformation configurations.
     */
-  def index = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def index: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     val user = loggedIn
@@ -575,45 +586,48 @@ class TransformationConfigurationsController @Inject()(
     * @param id The database id of the transformation configuration.
     * @return The detail page or an error.
     */
-  def show(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def show(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          for {
-            to   <- transformationConfigurationDAO.findById(id)
-            auth <- to.fold(Future.successful(false))(t => authorize(user, t.getReadAuthorisation))
-            cs <- if (auth) connectionInformationResourceDAO.allReadable(uid, user.groupIds)
-            else Future.successful(Seq.empty[ConnectionInformationResource])
-          } yield {
-            render {
-              case Accepts.Html() =>
-                to.fold(
-                  NotFound(
-                    views.html.errors.notFound(Messages("errors.notfound.title"),
-                                               Option(Messages("errors.notfound.header")))
-                  )
-                ) { t =>
-                  if (auth)
-                    Ok(views.html.dashboard.transformationconfigurations.show(t, cs))
-                  else
-                    Forbidden(views.html.errors.forbidden())
-                }
-              case Accepts.Json() =>
-                to.fold(NotFound("The requested resource was not found!").as("application/json")) {
-                  t =>
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            for {
+              to <- transformationConfigurationDAO.findById(id)
+              auth <- to.fold(Future.successful(false))(
+                t => authorize(user, t.getReadAuthorisation)
+              )
+              cs <- if (auth) connectionInformationResourceDAO.allReadable(uid, user.groupIds)
+              else Future.successful(Seq.empty[ConnectionInformationResource])
+            } yield {
+              render {
+                case Accepts.Html() =>
+                  to.fold(
+                    NotFound(
+                      views.html.errors.notFound(Messages("errors.notfound.title"),
+                                                 Option(Messages("errors.notfound.header")))
+                    )
+                  ) { t =>
                     if (auth)
-                      Ok(t.asJson.nospaces).as("application/json")
+                      Ok(views.html.dashboard.transformationconfigurations.show(t, cs))
                     else
-                      Forbidden("You are not authorised to access this resource!").as(
-                        "application/json"
-                      )
-                }
+                      Forbidden(views.html.errors.forbidden())
+                  }
+                case Accepts.Json() =>
+                  to.fold(NotFound("The requested resource was not found!").as("application/json")) {
+                    t =>
+                      if (auth)
+                        Ok(t.asJson.nospaces).as("application/json")
+                      else
+                        Forbidden("You are not authorised to access this resource!").as(
+                          "application/json"
+                        )
+                  }
+              }
             }
-          }
-      }
+        }
   }
 
   /**
@@ -623,116 +637,121 @@ class TransformationConfigurationsController @Inject()(
     * @param id The database id of a transformation configuration.
     * @return Redirect to the detail page flashing success or failure or an error page.
     */
-  def update(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def update(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          val getConnections = connectionInformationResourceDAO.allReadable(uid, user.groupIds)
-          val getCookbooks =
-            cookbookResourceDAO.allReadable(uid, user.groupIds)(loadCookbooks = false)
-          val getDfasdls                   = dfasdlResourceDAO.allReadable(uid, user.groupIds)(loadDfasdls = true)
-          val getGroups                    = authDAO.allGroups
-          val getUsers                     = authDAO.allUsernames
-          val getTransformationConfigsSize = transformationConfigurationDAO.count
-          for {
-            to      <- transformationConfigurationDAO.findById(id)
-            auth    <- to.fold(Future.successful(false))(t => authorize(user, t.getWriteAuthorisation))
-            dfasdls <- getDfasdls
-            dfasdlIdMappings <- Future.successful(
-              dfasdls.flatMap(d => d.id.map(id => id.toString -> d.dfasdl.id)).toMap
-            )
-            as  <- getUsers if auth
-            gs  <- getGroups if auth
-            cis <- getConnections if auth
-            cbs <- getCookbooks if auth
-            cnt <- getTransformationConfigsSize
-            max <- getNumberOfAllowedConfigurations
-            check <- TransformationConfigurationForm.form
-              .bindFromRequest()
-              .fold(
-                formWithErrors =>
-                  Future.successful(
-                    Failure(
-                      BadRequest(
-                        views.html.dashboard.transformationconfigurations.add(formWithErrors,
-                                                                              canSave = cnt < max
-                                                                                .getOrElse(0),
-                                                                              cis,
-                                                                              cbs,
-                                                                              dfasdlIdMappings,
-                                                                              gs,
-                                                                              as)
-                      )
-                    ): Validation[Result, TransformationConfigurationForm.Data]
-                ),
-                formData => {
-                  if (cnt < max.getOrElse(0))
-                    Future.successful(Success(formData))
-                  else
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            val getConnections = connectionInformationResourceDAO.allReadable(uid, user.groupIds)
+            val getCookbooks =
+              cookbookResourceDAO.allReadable(uid, user.groupIds)(loadCookbooks = false)
+            val getDfasdls                   = dfasdlResourceDAO.allReadable(uid, user.groupIds)(loadDfasdls = true)
+            val getGroups                    = authDAO.allGroups
+            val getUsers                     = authDAO.allUsernames
+            val getTransformationConfigsSize = transformationConfigurationDAO.count
+            for {
+              to <- transformationConfigurationDAO.findById(id)
+              auth <- to.fold(Future.successful(false))(
+                t => authorize(user, t.getWriteAuthorisation)
+              )
+              dfasdls <- getDfasdls
+              dfasdlIdMappings <- Future.successful(
+                dfasdls.flatMap(d => d.id.map(id => id.toString -> d.dfasdl.id)).toMap
+              )
+              as  <- getUsers if auth
+              gs  <- getGroups if auth
+              cis <- getConnections if auth
+              cbs <- getCookbooks if auth
+              cnt <- getTransformationConfigsSize
+              max <- getNumberOfAllowedConfigurations
+              check <- TransformationConfigurationForm.form
+                .bindFromRequest()
+                .fold(
+                  formWithErrors =>
                     Future.successful(
                       Failure(
-                        Redirect(routes.TransformationConfigurationsController.index()).flashing(
-                          "error" -> "Maximum number of transformation configurations reached."
+                        BadRequest(
+                          views.html.dashboard.transformationconfigurations.add(formWithErrors,
+                                                                                canSave = cnt < max
+                                                                                  .getOrElse(0),
+                                                                                cis,
+                                                                                cbs,
+                                                                                dfasdlIdMappings,
+                                                                                gs,
+                                                                                as)
+                        )
+                      ): Validation[Result, TransformationConfigurationForm.Data]
+                  ),
+                  formData => {
+                    if (cnt < max.getOrElse(0))
+                      Future.successful(Success(formData))
+                    else
+                      Future.successful(
+                        Failure(
+                          Redirect(routes.TransformationConfigurationsController.index()).flashing(
+                            "error" -> "Maximum number of transformation configurations reached."
+                          )
+                        )
+                      )
+                  }
+                )
+              cbo <- check match {
+                case Failure(f) =>
+                  log.error("Failure within CookbookResource!", f)
+                  Future.successful(None: Option[CookbookResource])
+                case Success(s) =>
+                  cookbookResourceDAO.findById(s.cookbookResourceId)(loadCookbook = true)
+              }
+              result <- check match {
+                case Failure(f) => Future.successful(f)
+                case Success(s) =>
+                  cbo.fold(
+                    Future.successful(
+                      BadRequest(
+                        views.html.dashboard.transformationconfigurations.add(
+                          TransformationConfigurationForm.form
+                            .fill(s)
+                            .withError("cookbookResource", "Cookbook not found!"),
+                          canSave = cnt < max.getOrElse(0),
+                          cis,
+                          cbs,
+                          dfasdlIdMappings,
+                          gs,
+                          as
                         )
                       )
                     )
-                }
-              )
-            cbo <- check match {
-              case Failure(f) => Future.successful(None: Option[CookbookResource])
-              case Success(s) =>
-                cookbookResourceDAO.findById(s.cookbookResourceId)(loadCookbook = true)
-            }
-            result <- check match {
-              case Failure(f) => Future.successful(f)
-              case Success(s) =>
-                cbo.fold(
-                  Future.successful(
-                    BadRequest(
-                      views.html.dashboard.transformationconfigurations.add(
-                        TransformationConfigurationForm.form
-                          .fill(s)
-                          .withError("cookbookResource", "Cookbook not found!"),
-                        canSave = cnt < max.getOrElse(0),
-                        cis,
-                        cbs,
-                        dfasdlIdMappings,
-                        gs,
-                        as
+                  ) { cr =>
+                    val tc = TransformationConfiguration(
+                      id = Option(id),
+                      name = s.name,
+                      sourceConnections = s.sources,
+                      targetConnection = s.target,
+                      cookbook = cr,
+                      dirty = false,
+                      ownerId = s.authorisation.ownerId,
+                      groupId = s.authorisation.groupId,
+                      groupPermissions = s.authorisation.groupPermissions,
+                      worldPermissions = s.authorisation.worldPermissions
+                    )
+                    transformationConfigurationDAO
+                      .update(tc)
+                      .map(
+                        f =>
+                          if (f > 0)
+                            Redirect(routes.TransformationConfigurationsController.show(id))
+                              .flashing("success" -> "Updated transformation configuration.")
+                          else
+                            Redirect(routes.TransformationConfigurationsController.index())
+                              .flashing("error" -> "Could not update transformation configuration!")
                       )
-                    )
-                  )
-                ) { cr =>
-                  val tc = TransformationConfiguration(
-                    id = Option(id),
-                    name = s.name,
-                    sourceConnections = s.sources,
-                    targetConnection = s.target,
-                    cookbook = cr,
-                    dirty = false,
-                    ownerId = s.authorisation.ownerId,
-                    groupId = s.authorisation.groupId,
-                    groupPermissions = s.authorisation.groupPermissions,
-                    worldPermissions = s.authorisation.worldPermissions
-                  )
-                  transformationConfigurationDAO
-                    .update(tc)
-                    .map(
-                      f =>
-                        if (f > 0)
-                          Redirect(routes.TransformationConfigurationsController.show(id))
-                            .flashing("success" -> "Updated transformation configuration.")
-                        else
-                          Redirect(routes.TransformationConfigurationsController.index())
-                            .flashing("error" -> "Could not update transformation configuration!")
-                    )
-                }
-            }
-          } yield result
-      }
+                  }
+              }
+            } yield result
+        }
   }
 
 }

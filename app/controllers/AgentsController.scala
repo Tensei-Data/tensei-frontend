@@ -19,7 +19,7 @@ package controllers
 
 import actors.FrontendService
 import actors.FrontendService.FrontendServiceMessages
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSelection, ActorSystem }
 import akka.pattern.ask
 import akka.util.Timeout
 import com.google.inject.Inject
@@ -28,9 +28,10 @@ import dao.{ AuthDAO, WorkHistoryDAO }
 import helpers.CommonTypeAliases.AgentInformationsData
 import jp.t2v.lab.play2.auth.AuthElement
 import models.Authorities.UserAuthority
+import org.slf4j
 import play.api.{ Configuration, Logger }
 import play.api.i18n.{ I18nSupport, Messages, MessagesApi }
-import play.api.mvc.Controller
+import play.api.mvc.{ Action, AnyContent, Controller }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
@@ -56,12 +57,12 @@ class AgentsController @Inject()(
     with AuthElement
     with AuthConfigImpl
     with I18nSupport {
-  val log = Logger.logger
+  val log: slf4j.Logger = Logger.logger
 
   val DEFAULT_ASK_TIMEOUT = 5000L // The fallback default timeout for `ask` operations in milliseconds.
 
-  val frontendSelection = system.actorSelection(s"/user/${FrontendService.name}")
-  implicit val timeout = Timeout(
+  val frontendSelection: ActorSelection = system.actorSelection(s"/user/${FrontendService.name}")
+  implicit val timeout: Timeout = Timeout(
     FiniteDuration(
       configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT),
       MILLISECONDS
@@ -72,8 +73,8 @@ class AgentsController @Inject()(
     * A function that returns a `User` object from an `Id`.
     * @todo Currently we override this method from the trait `AuthConfigImpl` because we can't use dependecy injection there to get the appropriate DAO.
     *
-    * @param id  The unique database id e.g. primary key for the user.
-    * @param ctx The execution context.
+    * @param id       The unique database id e.g. primary key for the user.
+    * @param context  The execution context.
     * @return An option to the user wrapped into a future.
     */
   override def resolveUser(id: Id)(implicit context: ExecutionContext): Future[Option[User]] =
@@ -107,7 +108,7 @@ class AgentsController @Inject()(
     *
     * @return A html page showing the desired information.
     */
-  def agents = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def agents: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     val user = loggedIn
@@ -135,14 +136,14 @@ class AgentsController @Inject()(
     * @param agentId The unique ID of the Tensei-Agent.
     * @return A detail page about the agent or an error page.
     */
-  def agentDetails(agentId: String) = AsyncStack(AuthorityKey -> UserAuthority) {
-    implicit request =>
+  def agentDetails(agentId: String): Action[AnyContent] =
+    AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
       import play.api.libs.concurrent.Execution.Implicits._
 
       val user = loggedIn
       user.id
         .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-          uid =>
+          _ =>
             fetchAgentInformations.map(
               info =>
                 info
@@ -157,7 +158,7 @@ class AgentsController @Inject()(
                 )
             )
         }
-  }
+    }
 
   /**
     * Show all agents that are disconnected and their reported informations. The uuids of the queue entries that
@@ -165,27 +166,30 @@ class AgentsController @Inject()(
     *
     * @return A html page showing the desired information.
     */
-  def agentsDisconnected = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def agentsDisconnected: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          for {
-            info <- fetchAgentInformations
-            uuids <- workHistoryDAO.filterReadable(
-              info.flatMap(_._2.workingState.map(_.uniqueIdentifier.map(e => e))).flatten.toSet,
-              uid,
-              user.groupIds
-            )
-          } yield
-            Ok(
-              views.html.dashboard.agents
-                .agentsDisconnected(info.filter(_._2.auth == AgentAuthorizationState.Disconnected),
-                                    uuids)
-            )
-      }
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            for {
+              info <- fetchAgentInformations
+              uuids <- workHistoryDAO.filterReadable(
+                info.flatMap(_._2.workingState.map(_.uniqueIdentifier.map(e => e))).flatten.toSet,
+                uid,
+                user.groupIds
+              )
+            } yield
+              Ok(
+                views.html.dashboard.agents
+                  .agentsDisconnected(
+                    info.filter(_._2.auth == AgentAuthorizationState.Disconnected),
+                    uuids
+                  )
+              )
+        }
   }
 
   /**
@@ -194,26 +198,29 @@ class AgentsController @Inject()(
     *
     * @return A html page showing the desired information.
     */
-  def agentsUnauthorized = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def agentsUnauthorized: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          for {
-            info <- fetchAgentInformations
-            uuids <- workHistoryDAO.filterReadable(
-              info.flatMap(_._2.workingState.map(_.uniqueIdentifier.map(e => e))).flatten.toSet,
-              uid,
-              user.groupIds
-            )
-          } yield
-            Ok(
-              views.html.dashboard.agents
-                .agentsUnauthorized(info.filter(_._2.auth == AgentAuthorizationState.Unauthorized),
-                                    uuids)
-            )
-      }
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            for {
+              info <- fetchAgentInformations
+              uuids <- workHistoryDAO.filterReadable(
+                info.flatMap(_._2.workingState.map(_.uniqueIdentifier.map(e => e))).flatten.toSet,
+                uid,
+                user.groupIds
+              )
+            } yield
+              Ok(
+                views.html.dashboard.agents
+                  .agentsUnauthorized(
+                    info.filter(_._2.auth == AgentAuthorizationState.Unauthorized),
+                    uuids
+                  )
+              )
+        }
   }
 }

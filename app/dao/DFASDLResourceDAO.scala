@@ -143,7 +143,7 @@ class DFASDLResourceDAO @Inject()(override protected val configuration: Configur
       deleted <- d.id.fold(Future.successful(0))(
         id => dbConfig.db.run(dfasdlresources.filter(_.id === id).delete)
       )
-      deletedDfasdls <- dbConfig.db.run(dfasdls.filter(_.id === d.dfasdl.id).delete) if deleted > 0
+      _ <- dbConfig.db.run(dfasdls.filter(_.id === d.dfasdl.id).delete) if deleted > 0
     } yield deleted
 
   /**
@@ -363,7 +363,7 @@ class DFASDLResourceDAO @Inject()(override protected val configuration: Configur
 
       for {
         currentResource <- dbConfig.db.run(dfasdlresources.filter(_.id === id).result.headOption)
-        renameOldDfasdls <- currentResource.fold(Future.successful(0))(
+        _ <- currentResource.fold(Future.successful(0))(
           r =>
             // Rename the old saved dfasdl versions if the ID of the dfasdl has changed.
             if (r._2 != d.dfasdl.id)
@@ -373,7 +373,7 @@ class DFASDLResourceDAO @Inject()(override protected val configuration: Configur
         )
         newDfasdl: DFASDL <- dbConfig.db
           .run(dfasdls += d.dfasdl.copy(version = nextDfasdlVersion.toString))
-          .map(f => d.dfasdl.copy(version = nextDfasdlVersion.toString))
+          .map(_ => d.dfasdl.copy(version = nextDfasdlVersion.toString))
         updatedResource <- dbConfig.db.run(
           dfasdlresources
             .filter(_.id === id)

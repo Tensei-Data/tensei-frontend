@@ -19,7 +19,7 @@ package controllers
 
 import actors.TriggerMaster.TriggerMasterMessages
 import actors.{ FrontendService, TriggerMaster }
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSelection, ActorSystem }
 import akka.pattern.ask
 import akka.util.Timeout
 import com.google.inject.Inject
@@ -29,9 +29,10 @@ import forms.{ ResourceAuthorisationFieldsForm, TriggerForm }
 import jp.t2v.lab.play2.auth.AuthElement
 import models.Authorities.UserAuthority
 import models.{ Permission, Trigger }
+import org.slf4j
 import play.api.{ Configuration, Logger }
 import play.api.i18n.{ I18nSupport, Messages, MessagesApi }
-import play.api.mvc.{ Controller, Result }
+import play.api.mvc.{ Action, AnyContent, Controller, Result }
 import play.filters.csrf.CSRF
 
 import scala.concurrent.duration._
@@ -62,13 +63,13 @@ class TriggerController @Inject()(
     with AuthConfigImpl
     with I18nSupport {
 
-  val log = Logger.logger
+  val log: slf4j.Logger = Logger.logger
 
   val DEFAULT_ASK_TIMEOUT = 5000L // The fallback default timeout for `ask` operations in milliseconds.
 
-  val frontendSelection = system.actorSelection(s"/user/${FrontendService.name}")
-  val triggerMaster     = system.actorSelection(s"/user/${TriggerMaster.Name}")
-  implicit val timeout = Timeout(
+  val frontendSelection: ActorSelection = system.actorSelection(s"/user/${FrontendService.name}")
+  val triggerMaster: ActorSelection     = system.actorSelection(s"/user/${TriggerMaster.Name}")
+  implicit val timeout: Timeout = Timeout(
     FiniteDuration(
       configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT),
       MILLISECONDS
@@ -110,7 +111,7 @@ class TriggerController @Inject()(
     *
     * @return The form to add a trigger or an error page.
     */
-  def add = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def add: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
@@ -163,7 +164,7 @@ class TriggerController @Inject()(
     *
     * @return Redirect to the detail or list page flashing success or failure or display an error page.
     */
-  def create = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def create: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
@@ -228,7 +229,7 @@ class TriggerController @Inject()(
                               )
                             ): Validation[Result, Trigger]
                           )(
-                            tc => Success(t)
+                            _ => Success(t)
                         )
                       )
                   } else {
@@ -278,7 +279,7 @@ class TriggerController @Inject()(
                                 )
                               )
                             ): Validation[Result, Trigger]
-                          } { ttc =>
+                          } { _ =>
                             Success(s)
                         }
                     )
@@ -314,43 +315,46 @@ class TriggerController @Inject()(
     * @param id The database id of the trigger.
     * @return Redirect to the triggers page flashing success or failure or display an error page.
     */
-  def destroy(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def destroy(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          for {
-            to   <- triggerDAO.findById(id)
-            auth <- to.fold(Future.successful(false))(t => authorize(user, t.getWriteAuthorisation))
-            result <- to.fold(
-              Future.successful(
-                NotFound(
-                  views.html.errors.notFound(Messages("errors.notfound.title"),
-                                             Option(Messages("errors.notfound.header")))
-                )
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            for {
+              to <- triggerDAO.findById(id)
+              auth <- to.fold(Future.successful(false))(
+                t => authorize(user, t.getWriteAuthorisation)
               )
-            )(
-              t =>
-                if (auth)
-                  triggerDAO
-                    .destroy(t)
-                    .map(
-                      f =>
-                        if (f > 0) {
-                          triggerMaster ! TriggerMasterMessages.UpdateTrigger(id)
-                          Redirect(routes.TriggerController.index())
-                            .flashing("success" -> "Trigger deleted.")
-                        } else
-                          Redirect(routes.TriggerController.index())
-                            .flashing("error" -> "Could not delete trigger.")
-                    )
-                else
-                  Future.successful(Forbidden(views.html.errors.forbidden()))
-            )
-          } yield result
-      }
+              result <- to.fold(
+                Future.successful(
+                  NotFound(
+                    views.html.errors.notFound(Messages("errors.notfound.title"),
+                                               Option(Messages("errors.notfound.header")))
+                  )
+                )
+              )(
+                t =>
+                  if (auth)
+                    triggerDAO
+                      .destroy(t)
+                      .map(
+                        f =>
+                          if (f > 0) {
+                            triggerMaster ! TriggerMasterMessages.UpdateTrigger(id)
+                            Redirect(routes.TriggerController.index())
+                              .flashing("success" -> "Trigger deleted.")
+                          } else
+                            Redirect(routes.TriggerController.index())
+                              .flashing("error" -> "Could not delete trigger.")
+                      )
+                  else
+                    Future.successful(Forbidden(views.html.errors.forbidden()))
+              )
+            } yield result
+        }
   }
 
   /**
@@ -359,65 +363,68 @@ class TriggerController @Inject()(
     * @param id The database id of the trigger.
     * @return Redirect to the detail page flashing success or failure or an error page.
     */
-  def edit(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def edit(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
-      implicit token =>
-        val user = loggedIn
-        user.id.fold(
-          Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))
-        ) { uid =>
-          val getGroups        = authDAO.allGroups
-          val getUsers         = authDAO.allUsernames
-          val getTriggersCount = triggerDAO.count
-          val getTransformationConfigurations =
-            transformationConfigurationDAO.allReadable(uid, user.groupIds)
-          for {
-            to   <- triggerDAO.findById(id)
-            auth <- to.fold(Future.successful(false))(t => authorize(user, t.getWriteAuthorisation))
-            as   <- getUsers if auth
-            gs   <- getGroups if auth
-            ts   <- getTransformationConfigurations if auth
-            cnt  <- getTriggersCount if auth
-            max  <- getNumberOfAllowedTriggers if auth
-          } yield {
-            to.fold(
-              NotFound(
-                views.html.errors.notFound(Messages("errors.notfound.title"),
-                                           Option(Messages("errors.notfound.header")))
+      CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
+        implicit token =>
+          val user = loggedIn
+          user.id.fold(
+            Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))
+          ) { uid =>
+            val getGroups        = authDAO.allGroups
+            val getUsers         = authDAO.allUsernames
+            val getTriggersCount = triggerDAO.count
+            val getTransformationConfigurations =
+              transformationConfigurationDAO.allReadable(uid, user.groupIds)
+            for {
+              to <- triggerDAO.findById(id)
+              auth <- to.fold(Future.successful(false))(
+                t => authorize(user, t.getWriteAuthorisation)
               )
-            )(
-              t =>
-                if (auth) {
-                  val authorisation = ResourceAuthorisationFieldsForm.Data(
-                    ownerId = t.ownerId,
-                    groupId = t.groupId,
-                    groupPermissions = t.groupPermissions,
-                    worldPermissions = t.worldPermissions
-                  )
-                  val formData = TriggerForm.Data(
-                    tkid = t.tkid,
-                    description = t.description,
-                    endpointUri = t.endpointUri,
-                    triggerTransformation = t.triggerTkId,
-                    active = t.active,
-                    authorisation = authorisation
-                  )
-                  Ok(
-                    views.html.dashboard.triggers.edit(id,
-                                                       TriggerForm.form.fill(formData),
-                                                       canSave = cnt <= max.getOrElse(0),
-                                                       gs,
-                                                       ts,
-                                                       as)
-                  )
-                } else
-                  Forbidden(views.html.errors.forbidden())
-            )
+              as  <- getUsers if auth
+              gs  <- getGroups if auth
+              ts  <- getTransformationConfigurations if auth
+              cnt <- getTriggersCount if auth
+              max <- getNumberOfAllowedTriggers if auth
+            } yield {
+              to.fold(
+                NotFound(
+                  views.html.errors.notFound(Messages("errors.notfound.title"),
+                                             Option(Messages("errors.notfound.header")))
+                )
+              )(
+                t =>
+                  if (auth) {
+                    val authorisation = ResourceAuthorisationFieldsForm.Data(
+                      ownerId = t.ownerId,
+                      groupId = t.groupId,
+                      groupPermissions = t.groupPermissions,
+                      worldPermissions = t.worldPermissions
+                    )
+                    val formData = TriggerForm.Data(
+                      tkid = t.tkid,
+                      description = t.description,
+                      endpointUri = t.endpointUri,
+                      triggerTransformation = t.triggerTkId,
+                      active = t.active,
+                      authorisation = authorisation
+                    )
+                    Ok(
+                      views.html.dashboard.triggers.edit(id,
+                                                         TriggerForm.form.fill(formData),
+                                                         canSave = cnt <= max.getOrElse(0),
+                                                         gs,
+                                                         ts,
+                                                         as)
+                    )
+                  } else
+                    Forbidden(views.html.errors.forbidden())
+              )
+            }
           }
-        }
-    }
+      }
   }
 
   /**
@@ -425,7 +432,7 @@ class TriggerController @Inject()(
     *
     * @return A list of all triggers that are readable by the user.
     */
-  def index = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def index: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     val user = loggedIn
@@ -446,32 +453,34 @@ class TriggerController @Inject()(
     * @param id The database id of the trigger.
     * @return The detail page or an error page.
     */
-  def show(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def show(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
-        uid =>
-          for {
-            to   <- triggerDAO.findById(id)
-            cs   <- transformationConfigurationDAO.allReadable(uid, user.groupIds)
-            auth <- to.fold(Future.successful(false))(t => authorize(user, t.getReadAuthorisation))
-          } yield {
-            to.fold(
-              NotFound(
-                views.html.errors.notFound(Messages("errors.notfound.title"),
-                                           Option(Messages("errors.notfound.header")))
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))) {
+          uid =>
+            for {
+              to <- triggerDAO.findById(id)
+              cs <- transformationConfigurationDAO.allReadable(uid, user.groupIds)
+              auth <- to
+                .fold(Future.successful(false))(t => authorize(user, t.getReadAuthorisation))
+            } yield {
+              to.fold(
+                NotFound(
+                  views.html.errors.notFound(Messages("errors.notfound.title"),
+                                             Option(Messages("errors.notfound.header")))
+                )
+              )(
+                t =>
+                  if (auth)
+                    Ok(views.html.dashboard.triggers.show(t, cs))
+                  else
+                    Forbidden(views.html.errors.forbidden())
               )
-            )(
-              t =>
-                if (auth)
-                  Ok(views.html.dashboard.triggers.show(t, cs))
-                else
-                  Forbidden(views.html.errors.forbidden())
-            )
-          }
-      }
+            }
+        }
   }
 
   /**
@@ -480,80 +489,88 @@ class TriggerController @Inject()(
     * @param id The database id of the trigger.
     * @return Redirect to the detail page flashing success or failure or an error page.
     */
-  def update(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def update(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
-      implicit token =>
-        val user = loggedIn
-        user.id.fold(
-          Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))
-        ) { uid =>
-          val getGroups        = authDAO.allGroups
-          val getUsers         = authDAO.allUsernames
-          val getTriggersCount = triggerDAO.count
-          val getTransformationConfigurations =
-            transformationConfigurationDAO.allReadable(uid, user.groupIds)
-          for {
-            to   <- triggerDAO.findById(id)
-            auth <- to.fold(Future.successful(false))(t => authorize(user, t.getWriteAuthorisation))
-            as   <- getUsers if auth
-            gs   <- getGroups if auth
-            ts   <- getTransformationConfigurations if auth
-            cnt  <- getTriggersCount if auth
-            max  <- getNumberOfAllowedTriggers if auth
-            result <- to.fold(
-              Future.successful(
-                NotFound(
-                  views.html.errors.notFound(Messages("errors.notfound.title"),
-                                             Option(Messages("errors.notfound.header")))
-                )
+      CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
+        implicit token =>
+          val user = loggedIn
+          user.id.fold(
+            Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))
+          ) { uid =>
+            val getGroups        = authDAO.allGroups
+            val getUsers         = authDAO.allUsernames
+            val getTriggersCount = triggerDAO.count
+            val getTransformationConfigurations =
+              transformationConfigurationDAO.allReadable(uid, user.groupIds)
+            for {
+              to <- triggerDAO.findById(id)
+              auth <- to.fold(Future.successful(false))(
+                t => authorize(user, t.getWriteAuthorisation)
               )
-            )(
-              t =>
-                TriggerForm.form
-                  .bindFromRequest()
-                  .fold(
-                    formWithErrors =>
-                      Future.successful(
-                        BadRequest(
-                          views.html.dashboard.triggers
-                            .edit(id, formWithErrors, canSave = cnt <= max.getOrElse(0), gs, ts, as)
-                        )
-                    ),
-                    formData => {
-                      val r = Trigger(
-                        id = Option(id),
-                        tkid = formData.tkid,
-                        description = formData.description,
-                        endpointUri = formData.endpointUri,
-                        triggerTkId = formData.triggerTransformation,
-                        active = formData.active,
-                        ownerId = formData.authorisation.ownerId,
-                        groupId = formData.authorisation.groupId,
-                        groupPermissions = formData.authorisation.groupPermissions,
-                        worldPermissions = formData.authorisation.worldPermissions
-                      )
-                      triggerDAO.update(r).map { f =>
-                        if (f > 0) {
-                          triggerMaster ! TriggerMasterMessages.UpdateTrigger(id)
-                          Redirect(routes.TriggerController.show(id))
-                            .flashing("success" -> "Resource updated.")
-                        } else
-                          Redirect(routes.TriggerController.index())
-                            .flashing("error" -> "Update failed.")
-                      }
-                    }
+              as  <- getUsers if auth
+              gs  <- getGroups if auth
+              ts  <- getTransformationConfigurations if auth
+              cnt <- getTriggersCount if auth
+              max <- getNumberOfAllowedTriggers if auth
+              result <- to.fold(
+                Future.successful(
+                  NotFound(
+                    views.html.errors.notFound(Messages("errors.notfound.title"),
+                                               Option(Messages("errors.notfound.header")))
+                  )
                 )
-            ) if auth
-          } yield {
-            if (auth)
-              result
-            else
-              Forbidden(views.html.errors.forbidden())
+              )(
+                t =>
+                  TriggerForm.form
+                    .bindFromRequest()
+                    .fold(
+                      formWithErrors =>
+                        Future.successful(
+                          BadRequest(
+                            views.html.dashboard.triggers
+                              .edit(id,
+                                    formWithErrors,
+                                    canSave = cnt <= max.getOrElse(0),
+                                    gs,
+                                    ts,
+                                    as)
+                          )
+                      ),
+                      formData => {
+                        val r = Trigger(
+                          id = Option(id),
+                          tkid = formData.tkid,
+                          description = formData.description,
+                          endpointUri = formData.endpointUri,
+                          triggerTkId = formData.triggerTransformation,
+                          active = formData.active,
+                          ownerId = formData.authorisation.ownerId,
+                          groupId = formData.authorisation.groupId,
+                          groupPermissions = formData.authorisation.groupPermissions,
+                          worldPermissions = formData.authorisation.worldPermissions
+                        )
+                        triggerDAO.update(r).map { f =>
+                          if (f > 0) {
+                            triggerMaster ! TriggerMasterMessages.UpdateTrigger(id)
+                            Redirect(routes.TriggerController.show(id))
+                              .flashing("success" -> "Resource updated.")
+                          } else
+                            Redirect(routes.TriggerController.index())
+                              .flashing("error" -> "Update failed.")
+                        }
+                      }
+                  )
+              ) if auth
+            } yield {
+              if (auth)
+                result
+              else
+                Forbidden(views.html.errors.forbidden())
+            }
           }
-        }
-    }
+      }
   }
 
 }

@@ -19,7 +19,7 @@ package controllers
 
 import actors.CronMaster.CronMasterMessages
 import actors.{ CronMaster, FrontendService }
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSelection, ActorSystem }
 import akka.util.Timeout
 import com.google.inject.Inject
 import com.wegtam.tensei.adt.TenseiLicenseMessages
@@ -28,10 +28,11 @@ import jp.t2v.lab.play2.auth.AuthElement
 import models.{ Cron, Permission }
 import play.api.{ Configuration, Logger }
 import play.api.i18n.{ I18nSupport, Messages, MessagesApi }
-import play.api.mvc.{ Controller, Result }
+import play.api.mvc.{ Action, AnyContent, Controller, Result }
 import akka.pattern.ask
 import forms.{ CronForm, ResourceAuthorisationFieldsForm }
 import models.Authorities.UserAuthority
+import org.slf4j
 import play.filters.csrf.CSRF
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -62,14 +63,14 @@ class CronController @Inject()(
     with AuthConfigImpl
     with I18nSupport {
 
-  val log = Logger.logger
+  val log: slf4j.Logger = Logger.logger
 
   val DEFAULT_DB_TIMEOUT  = 10000L // The fallback default timeout for database operations in milliseconds.
   val DEFAULT_ASK_TIMEOUT = 5000L  // The fallback default timeout for `ask` operations in milliseconds.
 
-  val frontendSelection = system.actorSelection(s"/user/${FrontendService.name}")
-  val cronMaster        = system.actorSelection(s"/user/${CronMaster.Name}")
-  implicit val timeout = Timeout(
+  val frontendSelection: ActorSelection = system.actorSelection(s"/user/${FrontendService.name}")
+  val cronMaster: ActorSelection        = system.actorSelection(s"/user/${CronMaster.Name}")
+  implicit val timeout: Timeout = Timeout(
     FiniteDuration(
       configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT),
       MILLISECONDS
@@ -115,7 +116,7 @@ class CronController @Inject()(
     *
     * @return The form for adding a new crontab entry or an error page.
     */
-  def add = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def add: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     val user = loggedIn
@@ -163,7 +164,7 @@ class CronController @Inject()(
     *
     * @return Redirect to the detail or list page flashing success or failure or display an error page.
     */
-  def create = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def create: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
@@ -225,7 +226,7 @@ class CronController @Inject()(
                                 )
                               )
                             ): Validation[Result, Cron]
-                          )(t => Success(c))
+                          )(_ => Success(c))
                       )
                   else
                     Future.successful(
@@ -266,53 +267,54 @@ class CronController @Inject()(
     * @param id The ID of a crontab entry.
     * @return Redirect to the crontab list flashing success or failure or display an error page.
     */
-  def destroy(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def destroy(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError())))(
-        uid =>
-          for {
-            co <- cronDAO.findById(id)
-            check <- co.fold(
-              Future.successful(
-                Failure(
-                  NotFound(
-                    views.html.errors.notFound(Messages("errors.notfound.title"),
-                                               Option(Messages("errors.notfound.header")))
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError())))(
+          uid =>
+            for {
+              co <- cronDAO.findById(id)
+              check <- co.fold(
+                Future.successful(
+                  Failure(
+                    NotFound(
+                      views.html.errors.notFound(Messages("errors.notfound.title"),
+                                                 Option(Messages("errors.notfound.header")))
+                    )
                   )
+                ): Future[Validation[Result, Cron]]
+              )(
+                c =>
+                  authorize(user, c.getWriteAuthorisation).map(
+                    can =>
+                      if (can)
+                        Success(c)
+                      else
+                        Failure(Forbidden(views.html.errors.forbidden()))
                 )
-              ): Future[Validation[Result, Cron]]
-            )(
-              c =>
-                authorize(user, c.getWriteAuthorisation).map(
-                  can =>
-                    if (can)
-                      Success(c)
-                    else
-                      Failure(Forbidden(views.html.errors.forbidden()))
               )
-            )
-            result <- check match {
-              case Failure(f) => Future.successful(f)
-              case Success(s) =>
-                cronDAO
-                  .destroy(s)
-                  .map(
-                    r =>
-                      if (r > 0) {
-                        cronMaster ! CronMasterMessages.UpdateCron(id)
-                        Redirect(routes.CronController.index()).flashing(
-                          "success" -> Messages("ui.model.deleted", Messages("models.cron"))
-                        )
-                      } else
-                        Redirect(routes.CronController.index())
-                          .flashing("error" -> "No entry was deleted.")
-                  )
-            }
-          } yield result
-      )
+              result <- check match {
+                case Failure(f) => Future.successful(f)
+                case Success(s) =>
+                  cronDAO
+                    .destroy(s)
+                    .map(
+                      r =>
+                        if (r > 0) {
+                          cronMaster ! CronMasterMessages.UpdateCron(id)
+                          Redirect(routes.CronController.index()).flashing(
+                            "success" -> Messages("ui.model.deleted", Messages("models.cron"))
+                          )
+                        } else
+                          Redirect(routes.CronController.index())
+                            .flashing("error" -> "No entry was deleted.")
+                    )
+              }
+            } yield result
+        )
   }
 
   /**
@@ -321,62 +323,64 @@ class CronController @Inject()(
     * @param id The ID of a crontab entry.
     * @return The edit form or an error page.
     */
-  def edit(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def edit(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
-      implicit token =>
-        val user = loggedIn
-        user.id.fold(
-          Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))
-        ) { uid =>
-          val getConfigurations = transformationConfigurationDAO.allReadable(uid, user.groupIds)
-          val getGroups         = authDAO.allGroups
-          val getUsers          = authDAO.allUsernames
-          val getCrontabSize    = cronDAO.count
-          for {
-            co   <- cronDAO.findById(id)
-            as   <- getUsers if co.isDefined
-            gs   <- getGroups if co.isDefined
-            ts   <- getConfigurations if co.isDefined
-            cnt  <- getCrontabSize
-            max  <- getAllowedNumberOfCronjobs
-            auth <- co.fold(Future.successful(false))(c => authorize(user, c.getWriteAuthorisation))
-          } yield {
-            co.fold(
-              NotFound(
-                views.html.errors.notFound(Messages("errors.notfound.title"),
-                                           Option(Messages("errors.notfound.header")))
-              )
-            ) { c =>
-              if (auth) {
-                val authorisation = ResourceAuthorisationFieldsForm.Data(
-                  ownerId = c.ownerId,
-                  groupId = c.groupId,
-                  groupPermissions = c.groupPermissions,
-                  worldPermissions = c.worldPermissions
+      CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
+        implicit token =>
+          val user = loggedIn
+          user.id.fold(
+            Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))
+          ) { uid =>
+            val getConfigurations = transformationConfigurationDAO.allReadable(uid, user.groupIds)
+            val getGroups         = authDAO.allGroups
+            val getUsers          = authDAO.allUsernames
+            val getCrontabSize    = cronDAO.count
+            for {
+              co  <- cronDAO.findById(id)
+              as  <- getUsers if co.isDefined
+              gs  <- getGroups if co.isDefined
+              ts  <- getConfigurations if co.isDefined
+              cnt <- getCrontabSize
+              max <- getAllowedNumberOfCronjobs
+              auth <- co
+                .fold(Future.successful(false))(c => authorize(user, c.getWriteAuthorisation))
+            } yield {
+              co.fold(
+                NotFound(
+                  views.html.errors.notFound(Messages("errors.notfound.title"),
+                                             Option(Messages("errors.notfound.header")))
                 )
-                val formData = CronForm.Data(
-                  tkid = c.tkid,
-                  description = c.description,
-                  format = c.format,
-                  active = c.active,
-                  authorisation = authorisation
-                )
-                Ok(
-                  views.html.dashboard.crons.edit(id,
-                                                  CronForm.form.fill(formData),
-                                                  canSave = cnt <= max.getOrElse(0),
-                                                  gs,
-                                                  ts,
-                                                  as)
-                )
-              } else
-                Forbidden(views.html.errors.forbidden())
+              ) { c =>
+                if (auth) {
+                  val authorisation = ResourceAuthorisationFieldsForm.Data(
+                    ownerId = c.ownerId,
+                    groupId = c.groupId,
+                    groupPermissions = c.groupPermissions,
+                    worldPermissions = c.worldPermissions
+                  )
+                  val formData = CronForm.Data(
+                    tkid = c.tkid,
+                    description = c.description,
+                    format = c.format,
+                    active = c.active,
+                    authorisation = authorisation
+                  )
+                  Ok(
+                    views.html.dashboard.crons.edit(id,
+                                                    CronForm.form.fill(formData),
+                                                    canSave = cnt <= max.getOrElse(0),
+                                                    gs,
+                                                    ts,
+                                                    as)
+                  )
+                } else
+                  Forbidden(views.html.errors.forbidden())
+              }
             }
           }
-        }
-    }
+      }
   }
 
   /**
@@ -384,7 +388,7 @@ class CronController @Inject()(
     *
     * @return A list of all cronjobs readable by the user.
     */
-  def index = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
+  def index: Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
     import play.api.libs.concurrent.Execution.Implicits._
 
     val user = loggedIn
@@ -404,34 +408,35 @@ class CronController @Inject()(
     * @param id The ID of the crontab entry.
     * @return The detail page of the crontab entry or an error page.
     */
-  def show(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def show(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    val user = loggedIn
-    user.id
-      .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError())))(
-        uid =>
-          for {
-            co <- cronDAO.findById(id)
-            result <- co.fold(
-              Future.successful(
-                NotFound(
-                  views.html.errors.notFound(Messages("errors.notfound.title"),
-                                             Option(Messages("errors.notfound.header")))
+      val user = loggedIn
+      user.id
+        .fold(Future.successful(InternalServerError(views.html.dashboard.errors.serverError())))(
+          uid =>
+            for {
+              co <- cronDAO.findById(id)
+              result <- co.fold(
+                Future.successful(
+                  NotFound(
+                    views.html.errors.notFound(Messages("errors.notfound.title"),
+                                               Option(Messages("errors.notfound.header")))
+                  )
+                )
+              )(
+                c =>
+                  authorize(user, c.getReadAuthorisation).map(
+                    can =>
+                      if (can)
+                        Ok(views.html.dashboard.crons.show(c))
+                      else
+                        Forbidden(views.html.errors.forbidden())
                 )
               )
-            )(
-              c =>
-                authorize(user, c.getReadAuthorisation).map(
-                  can =>
-                    if (can)
-                      Ok(views.html.dashboard.crons.show(c))
-                    else
-                      Forbidden(views.html.errors.forbidden())
-              )
-            )
-          } yield result
-      )
+            } yield result
+        )
   }
 
   /**
@@ -440,78 +445,86 @@ class CronController @Inject()(
     * @param id The ID of the crontab entry.
     * @return Redirect to the detail page flashing success or failure or display an error page.
     */
-  def update(id: Long) = AsyncStack(AuthorityKey -> UserAuthority) { implicit request =>
-    import play.api.libs.concurrent.Execution.Implicits._
+  def update(id: Long): Action[AnyContent] = AsyncStack(AuthorityKey -> UserAuthority) {
+    implicit request =>
+      import play.api.libs.concurrent.Execution.Implicits._
 
-    CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
-      implicit token =>
-        val user = loggedIn
-        user.id.fold(
-          Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))
-        ) { uid =>
-          val getConfigurations = transformationConfigurationDAO.allReadable(uid, user.groupIds)
-          val getGroups         = authDAO.allGroups
-          val getUsers          = authDAO.allUsernames
-          val getCrontabSize    = cronDAO.count
-          for {
-            co   <- cronDAO.findById(id)
-            as   <- getUsers if co.isDefined
-            gs   <- getGroups if co.isDefined
-            ts   <- getConfigurations if co.isDefined
-            cnt  <- getCrontabSize
-            max  <- getAllowedNumberOfCronjobs
-            auth <- co.fold(Future.successful(false))(c => authorize(user, c.getWriteAuthorisation))
-            result <- co.fold(
-              Future.successful(
-                NotFound(
-                  views.html.errors.notFound(Messages("errors.notfound.title"),
-                                             Option(Messages("errors.notfound.header")))
-                )
+      CSRF.getToken.fold(Future.successful(Forbidden(views.html.errors.forbidden()))) {
+        implicit token =>
+          val user = loggedIn
+          user.id.fold(
+            Future.successful(InternalServerError(views.html.dashboard.errors.serverError()))
+          ) { uid =>
+            val getConfigurations = transformationConfigurationDAO.allReadable(uid, user.groupIds)
+            val getGroups         = authDAO.allGroups
+            val getUsers          = authDAO.allUsernames
+            val getCrontabSize    = cronDAO.count
+            for {
+              co  <- cronDAO.findById(id)
+              as  <- getUsers if co.isDefined
+              gs  <- getGroups if co.isDefined
+              ts  <- getConfigurations if co.isDefined
+              cnt <- getCrontabSize
+              max <- getAllowedNumberOfCronjobs
+              auth <- co.fold(Future.successful(false))(
+                c => authorize(user, c.getWriteAuthorisation)
               )
-            )(
-              c =>
-                CronForm.form
-                  .bindFromRequest()
-                  .fold(
-                    formWithErrors =>
-                      Future.successful(
-                        BadRequest(
-                          views.html.dashboard.crons
-                            .edit(id, formWithErrors, canSave = cnt <= max.getOrElse(0), gs, ts, as)
-                        )
-                    ),
-                    formData => {
-                      val r = Cron(
-                        id = Option(id),
-                        tkid = formData.tkid,
-                        description = formData.description,
-                        format = formData.format,
-                        active = formData.active,
-                        ownerId = formData.authorisation.ownerId,
-                        groupId = formData.authorisation.groupId,
-                        groupPermissions = formData.authorisation.groupPermissions,
-                        worldPermissions = formData.authorisation.worldPermissions
-                      )
-                      cronDAO.update(r).map { f =>
-                        if (f > 0) {
-                          cronMaster ! CronMasterMessages.UpdateCron(id)
-                          Redirect(routes.CronController.show(id))
-                            .flashing("success" -> "Resource updated.")
-                        } else
-                          Redirect(routes.CronController.index())
-                            .flashing("error" -> "Update failed.")
-                      }
-                    }
+              result <- co.fold(
+                Future.successful(
+                  NotFound(
+                    views.html.errors.notFound(Messages("errors.notfound.title"),
+                                               Option(Messages("errors.notfound.header")))
+                  )
                 )
-            ) if auth
-          } yield {
-            if (auth)
-              result
-            else
-              Forbidden(views.html.errors.forbidden())
+              )(
+                c =>
+                  CronForm.form
+                    .bindFromRequest()
+                    .fold(
+                      formWithErrors =>
+                        Future.successful(
+                          BadRequest(
+                            views.html.dashboard.crons
+                              .edit(id,
+                                    formWithErrors,
+                                    canSave = cnt <= max.getOrElse(0),
+                                    gs,
+                                    ts,
+                                    as)
+                          )
+                      ),
+                      formData => {
+                        val r = Cron(
+                          id = Option(id),
+                          tkid = formData.tkid,
+                          description = formData.description,
+                          format = formData.format,
+                          active = formData.active,
+                          ownerId = formData.authorisation.ownerId,
+                          groupId = formData.authorisation.groupId,
+                          groupPermissions = formData.authorisation.groupPermissions,
+                          worldPermissions = formData.authorisation.worldPermissions
+                        )
+                        cronDAO.update(r).map { f =>
+                          if (f > 0) {
+                            cronMaster ! CronMasterMessages.UpdateCron(id)
+                            Redirect(routes.CronController.show(id))
+                              .flashing("success" -> "Resource updated.")
+                          } else
+                            Redirect(routes.CronController.index())
+                              .flashing("error" -> s"Update failed for Cron `${c.id}`.")
+                        }
+                      }
+                  )
+              ) if auth
+            } yield {
+              if (auth)
+                result
+              else
+                Forbidden(views.html.errors.forbidden())
+            }
           }
-        }
-    }
+      }
   }
 
 }

@@ -46,7 +46,7 @@ final case class WorkQueueEntry(
 object WorkQueueEntry {
 
   // The default value for the sort order.
-  val DEFAULT_SORT_ORDER = Int.MaxValue
+  val DEFAULT_SORT_ORDER: Int = Int.MaxValue
 
   /**
     * Use this function to create an entry using default values marked with

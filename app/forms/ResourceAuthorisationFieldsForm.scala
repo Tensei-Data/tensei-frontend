@@ -19,6 +19,7 @@ package forms
 
 import models.Permission
 import play.api.data.Forms._
+import play.api.data.Mapping
 
 /**
   * This form is actually a helper form that can be used to ease the inclusion of the
@@ -29,7 +30,7 @@ object ResourceAuthorisationFieldsForm {
   val SubFormName = "authorisation"
 
   // A play framework form mapping to be used in another form.
-  val form = mapping(
+  val form: Mapping[Data] = mapping(
     "ownerId" -> number,
     "groupId" -> optional(number),
     "groupPermissions" -> number.transform[Set[Permission]](

@@ -27,6 +27,7 @@ import akka.actor._
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.Publish
 import akka.pattern.ask
+import akka.util
 import akka.util.Timeout
 import com.wegtam.tensei.adt.GlobalMessages.ErrorOccured
 import com.wegtam.tensei.adt.StatsMessages.CalculateStatistics
@@ -105,7 +106,9 @@ class FrontendService @Inject()(protected val configuration: Configuration,
         context.watch(serverRef)
         goto(FrontendServiceState.Running) using data.copy(chef = Option(serverRef))
       } else {
-        log.warning("Got unhandled ReportingTo message from '{}'!", serverRef.path)
+        log.warning("Got unhandled ReportingTo message from '{}' with serverId '{}'!",
+                    serverRef.path,
+                    serverId)
         stay() using data
       }
     case Event(FrontendServiceMessages.HasServerConnection, data) =>
@@ -296,7 +299,7 @@ class FrontendService @Inject()(protected val configuration: Configuration,
           )
         } else {
           log.debug("Querying chef for agents informations.")
-          implicit val timeout = Timeout(askTimeout)
+          implicit val timeout: util.Timeout = Timeout(askTimeout)
           val askChef = chef
             .ask(ServerMessages.ReportAgentsInformations)
             .mapTo[ServerMessages.ReportAgentsInformationsResponse]
@@ -314,8 +317,8 @@ class FrontendService @Inject()(protected val configuration: Configuration,
                              lastAgentsInformationsUpdate = System.currentTimeMillis())
     case Event(WorkQueueMasterMessages.StartMessage(agentStartTransformation, queueRef), data) =>
       data.chef.fold(log.error("No server connection available!")) { chef =>
-        val returnActor      = queueRef
-        implicit val timeout = Timeout(askTimeout)
+        val returnActor                    = queueRef
+        implicit val timeout: util.Timeout = Timeout(askTimeout)
         val askChef = chef
           .ask(ServerMessages.StartTransformationConfiguration(Option(agentStartTransformation)))
           .mapTo[ServerMessages.StartTransformationConfigurationResponse]
@@ -366,7 +369,7 @@ class FrontendService @Inject()(protected val configuration: Configuration,
         } else
           stay() using data
       }
-    case Event(FrontendServiceMessages.Shutdown, data) =>
+    case Event(FrontendServiceMessages.Shutdown, _) =>
       log.warning("Received shutdown signal from {}.", sender().path)
       log.warning("Shutting down.")
       stop(FSM.Shutdown)
@@ -477,7 +480,7 @@ class FrontendService @Inject()(protected val configuration: Configuration,
         val selection = context.actorSelection(
           s"${nodes.get(0)}/user/${ClusterConstants.topLevelActorNameOnServer}"
         )
-        implicit val timeout = Timeout(
+        implicit val timeout: util.Timeout = Timeout(
           FiniteDuration(configuration
                            .getMilliseconds("tensei.frontend.server-startup-timeout")
                            .getOrElse(DEFAULT_SERVER_STARTUP_TIMEOUT),
@@ -556,7 +559,14 @@ object FrontendService {
 
   val name = "FrontendService"
 
-  def props: Props = Props(classOf[FrontendService])
+  def props(configuration: Configuration,
+            tcQueueDAO: WorkQueueDAO,
+            tcQueueHistoryDAO: WorkHistoryDAO): Props =
+    Props(
+      new FrontendService(configuration: Configuration,
+                          tcQueueDAO: WorkQueueDAO,
+                          tcQueueHistoryDAO: WorkHistoryDAO)
+    )
 
   sealed trait FrontendServiceState
 

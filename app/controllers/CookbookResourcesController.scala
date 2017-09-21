@@ -79,7 +79,7 @@ class CookbookResourcesController @Inject() (
   private val DEFAULT_ASK_TIMEOUT = 5000L // The fallback default timeout for `ask` operations in milliseconds.
 
   private val frontendSelection = system.actorSelection(s"/user/${FrontendService.name}")
-  implicit val timeout = Timeout(FiniteDuration(configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT), MILLISECONDS))
+  implicit val timeout: Timeout = Timeout(FiniteDuration(configuration.getMilliseconds("tensei.frontend.ask-timeout").getOrElse(DEFAULT_ASK_TIMEOUT), MILLISECONDS))
 
   /**
     * A function that returns a `User` object from an `Id`.
@@ -386,7 +386,7 @@ class CookbookResourcesController @Inject() (
       } yield {
         if (auth)
           co.fold(NotFound(views.html.errors.notFound(Messages("errors.notfound.title"), Option(Messages("errors.notfound.header")))))(
-            c ⇒ Ok(views.html.dashboard.cookbookresources.editor(id))
+            _ ⇒ Ok(views.html.dashboard.cookbookresources.editor(id))
           )
         else
           Forbidden(views.html.errors.forbidden())
@@ -437,7 +437,7 @@ class CookbookResourcesController @Inject() (
         co ← getCookbook
         eo ← getByName
       } yield {
-        val response: Boolean = eo.fold(false)(e ⇒ co.fold(true)(c ⇒ false))
+        val response: Boolean = eo.fold(false)(_ ⇒ co.fold(true)(_ ⇒ false))
         render {
           case Accepts.Html() ⇒ Ok(response.toString)
           case Accepts.Json() ⇒ Ok(response.asJson.nospaces).as("application/json")
@@ -565,7 +565,7 @@ class CookbookResourcesController @Inject() (
         uid ⇒
           for {
             co ← cookbookResourceDAO.findByCookbookId(cookbookId)(loadCookbook = true)
-            auth ← co.fold(Future.successful(false))(c ⇒ authorize(user, c.getReadAuthorisation))
+            _ ← co.fold(Future.successful(false))(c ⇒ authorize(user, c.getReadAuthorisation))
             ids ← co.fold(Future.successful(Set.empty[String]))(
               c ⇒ Future.successful(
                 c.cookbook.target.fold(Set.empty[String])(t ⇒ Set(t.id)) ++ c.cookbook.sources.map(_.id).toSet
@@ -600,7 +600,7 @@ class CookbookResourcesController @Inject() (
     }
     msgO.fold(Future.successful(None: Option[Cookbook]))(
       msg ⇒ frontendSelection.ask(msg).map {
-        case MappingSuggesterMessages.SuggestedMapping(suggestedCookbook, suggesterMode) ⇒ Option(suggestedCookbook)
+        case MappingSuggesterMessages.SuggestedMapping(suggestedCookbook, _) ⇒ Option(suggestedCookbook)
         case anyMessage ⇒
           log.error("Received an unexpected response while waiting for mapping suggestions! {}", anyMessage)
           None
