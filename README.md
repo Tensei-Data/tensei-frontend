@@ -12,6 +12,23 @@ cronjobs and triggers.
 
 The main website for Tensei-Data is located at: https://www.wegtam.com/products/tensei-data
 
+### Downloads
+
+You can find the source archives and debian packages on the 
+[releases page](https://github.com/Tensei-Data/tensei-frontend/releases).
+
+If you just want to launch a quick demo version which includes all needed 
+components we recommend you to try out the available 
+[vagrant box](https://app.vagrantup.com/wegtam/boxes/tensei-demo). Just create
+an empty folder, open a terminal and run the following commands inside the folder:
+
+    vagrant init wegtam/tensei-demo; vagrant up --provider virtualbox
+
+After the application has started goto http://localhost:9000 in your browser.
+
+You need to have [vagrant](https://www.vagrantup.com) and 
+[virtualbox](https://www.virtualbox.org/) installed for this to work.
+
 ### Mailing lists
 
 [![Google-Group tensei-data](https://img.shields.io/badge/group-tensei--data-brightgreen.svg)](https://groups.google.com/forum/#!forum/tensei-data)
