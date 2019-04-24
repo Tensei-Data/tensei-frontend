@@ -28,3 +28,7 @@ Session.vim
 # Windows
 Thumbs.db
 Desktop.ini
+# Bloop
+.bloop/
+# Metals
+.metals/
